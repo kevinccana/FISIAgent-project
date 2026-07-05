@@ -1,0 +1,64 @@
+{
+  "distritos": [
+    {
+      "nombre": "San Juan de Lurigancho",
+      "keywords": ["sjl", "san juan", "lurigancho"],
+      "recursos": [
+        {
+          "tipo": "centro_salud",
+          "nombre": "CSMC San Juan de Lurigancho",
+          "direccion": "Av. Fernando Wiesse 1234",
+          "telefono": "01 123456",
+          "horario": "Lun a Vie 8am-4pm"
+        },
+        {
+          "tipo": "linea_ayuda",
+          "nombre": "Linea 113 Salud Mental",
+          "direccion": "Atencion telefonica nacional",
+          "telefono": "113 opcion 5",
+          "horario": "24/7"
+        }
+      ]
+    },
+    {
+      "nombre": "Comas",
+      "keywords": ["comas", "cono norte"],
+      "recursos": [
+        {
+          "tipo": "centro_salud",
+          "nombre": "CSMC Comas",
+          "direccion": "Av. Tupac Amaru 456",
+          "telefono": "01 654321",
+          "horario": "Lun a Vie 8am-4pm"
+        },
+        {
+          "tipo": "hospital",
+          "nombre": "Hospital Sergio Bernales",
+          "direccion": "Av. Tahuantinsuyo 900",
+          "telefono": "01 222333",
+          "horario": "Emergencias 24/7"
+        }
+      ]
+    },
+    {
+      "nombre": "Lima Centro",
+      "keywords": ["lima centro", "centro de lima", "cercado"],
+      "recursos": [
+        {
+          "tipo": "centro_salud",
+          "nombre": "CSMC Lima Centro",
+          "direccion": "Jr. Camaná 789",
+          "telefono": "01 444555",
+          "horario": "Lun a Vie 8am-4pm"
+        },
+        {
+          "tipo": "linea_ayuda",
+          "nombre": "Telefono de la Esperanza",
+          "direccion": "Atencion telefonica",
+          "telefono": "0800-123-123",
+          "horario": "24/7"
+        }
+      ]
+    }
+  ]
+}
