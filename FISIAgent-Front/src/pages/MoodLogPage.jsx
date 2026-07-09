@@ -1,57 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import M1 from "../../src/assets/spritePics/M1.png"
 import M2 from "../../src/assets/spritePics/M2.png"
 import M3 from "../../src/assets/spritePics/M3.png"
 import M4 from "../../src/assets/spritePics/M4.png"
+import {
+  registerMood,
+  getMoodHistory,
+  getMoodInsights,
+  updateMood,
+  deleteMood,
+} from "../services/api";
 
-
-// ── Mock Data ────────────────────────────────────────────────────────────────
-// mood: 0=Muy bien 1=Bien 2=Mal 3=Muy mal  (ordinal, de mejor a peor)
-const MOCK_DATA = {
-  year: 2025,
-  month: 5, // Mayo (1-indexed)
-  entries: {
-    1:  { mood: 0, note: "Gran día con amigos" },
-    2:  { mood: 1, note: "Tranquilo y productivo" },
-    3:  { mood: 0, note: "Me sentí con energía" },
-    4:  { mood: 1, note: "" },
-    5:  { mood: 2, note: "Un poco cansado" },
-    6:  { mood: 0, note: "Excelente inicio de semana" },
-    7:  { mood: 1, note: "" },
-    8:  { mood: 1, note: "Normal" },
-    9:  { mood: 2, note: "Estrés en el trabajo" },
-    10: { mood: 3, note: "Muy difícil hoy" },
-    11: { mood: 2, note: "Mejorando un poco" },
-    12: { mood: 1, note: "" },
-    13: { mood: 0, note: "Fin de semana genial" },
-    14: { mood: 0, note: "Descansé bien" },
-    15: { mood: 1, note: "" },
-    16: { mood: 1, note: "Día normal" },
-    17: { mood: 2, note: "Cansancio acumulado" },
-    18: { mood: 1, note: "" },
-    19: { mood: 0, note: "Salida con familia" },
-    20: { mood: 1, note: "" },
-    21: { mood: 2, note: "Lunes pesado" },
-    22: { mood: 1, note: "" },
-    23: { mood: 0, note: "Noticias buenas" },
-    24: { mood: 1, note: "" },
-    25: { mood: 1, note: "" },
-    26: { mood: 2, note: "Reuniones largas" },
-    27: { mood: 3, note: "Mal día" },
-    28: { mood: 1, note: "Recuperándome" },
-    29: { mood: 0, note: "¡Mucho mejor!" },
-    30: { mood: 1, note: "" },
-  },
-  // Historial de los últimos 4 meses para gráfico de línea
-  monthlyHistory: [
-    { label: "Feb", avgMood: 1.2 },
-    { label: "Mar", avgMood: 0.8 },
-    { label: "Abr", avgMood: 1.5 },
-    { label: "May", avgMood: 1.1 },
-  ],
-};
+const USER_ID = "estudiante_demo";
 
 // ── Mood Config ──────────────────────────────────────────────────────────────
+// mood: 0=Muy bien 1=Bien 2=Mal 3=Muy mal  (ordinal, de mejor a peor)
 const MOODS = [
   { label: "Muy bien", emoji: "😊", color: "#4A90E2", value: 0, dir: M1},
   { label: "Bien",     emoji: "🙂", color: "#F5C842", value: 1, dir: M2},
@@ -71,6 +34,17 @@ function buildCalendarGrid(year, month) {
   for (let i = 0; i < offset; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   return cells;
+}
+
+function entriesByDayFromHistory(history, year, month) {
+  const entries = {};
+  history.forEach((entry) => {
+    const ts = new Date(entry.timestamp);
+    if (ts.getFullYear() === year && ts.getMonth() + 1 === month) {
+      entries[ts.getDate()] = { id: entry.id, mood: entry.mood, note: entry.note };
+    }
+  });
+  return entries;
 }
 
 // ── Mini Bar Chart (SVG) ─────────────────────────────────────────────────────
@@ -111,7 +85,7 @@ function LineChart({ history }) {
   const vals = history.map(h => h.avgMood);
   const maxV = Math.max(...vals, 2);
   const pts = vals.map((v, i) => {
-    const x = pad + (i / (vals.length - 1)) * (W - pad * 2);
+    const x = pad + (i / (vals.length - 1 || 1)) * (W - pad * 2);
     const y = H - pad - (v / maxV) * (H - pad * 2);
     return `${x},${y}`;
   });
@@ -132,14 +106,14 @@ function LineChart({ history }) {
       />
       {/* line */}
       <polyline points={polyline} fill="none"
-        stroke="#4A90E2" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        stroke="#7A7F87" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
       {/* dots + labels */}
       {vals.map((v, i) => {
-        const x = pad + (i / (vals.length - 1)) * (W - pad * 2);
+        const x = pad + (i / (vals.length - 1 || 1)) * (W - pad * 2);
         const y = H - pad - (v / maxV) * (H - pad * 2);
         return (
           <g key={i}>
-            <circle cx={x} cy={y} r={4} fill="#4A90E2" stroke="#0f3460" strokeWidth={2} />
+            <circle cx={x} cy={y} r={4} fill="#7A7F87" stroke="#431720" strokeWidth={2} />
             <text x={x} y={H - 4} textAnchor="middle" fill="#a0a0a0" fontSize={9}>
               {history[i].label}
             </text>
@@ -157,15 +131,51 @@ function LineChart({ history }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function MoodJournalPage() {
-  const [data, setData] = useState(MOCK_DATA);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1; // 1-indexed
+  const todayNum = today.getDate();
+
+  const [entries, setEntries] = useState({});
+  const [monthlyHistory, setMonthlyHistory] = useState([]);
+  const [insights, setInsights] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const [selectedMood, setSelectedMood] = useState(null);
   const [note, setNote] = useState("");
-  const [selectedDay, setSelectedDay] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(todayNum);
+  const [selectedEntryId, setSelectedEntryId] = useState(null);
 
-  const { year, month, entries } = data;
   const grid = buildCalendarGrid(year, month);
   const monthName = new Date(year, month - 1, 1)
     .toLocaleString("es-ES", { month: "long", year: "numeric" });
+
+  const loadMoodData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [history, insightsData] = await Promise.all([
+        getMoodHistory(USER_ID, 40),
+        getMoodInsights(USER_ID, 30),
+      ]);
+      setEntries(entriesByDayFromHistory(history, year, month));
+      setInsights(insightsData);
+      setMonthlyHistory(
+        insightsData.monthly_history.map(h => ({ label: h.month_label, avgMood: h.avg_mood }))
+      );
+    } catch (e) {
+      console.error("[MoodJournal] Error al cargar datos:", e);
+      setError("No se pudo conectar con el backend. ¿Está corriendo en localhost:8000?");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMoodData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDayClick = (day) => {
     if (!day) return;
@@ -174,30 +184,53 @@ export default function MoodJournalPage() {
     if (entry) {
       setSelectedMood(entry.mood);
       setNote(entry.note);
+      setSelectedEntryId(entry.id);
     } else {
       setSelectedMood(null);
       setNote("");
+      setSelectedEntryId(null);
     }
-    console.log(`[MoodJournal] Día seleccionado: ${day}`);
   };
 
-  const handleGuardar = () => {
-    if (selectedMood === null) {
-      console.warn("[MoodJournal] Guardar sin mood seleccionado");
-      return;
+  const canRegisterNew = selectedDay === todayNum;
+
+  const handleGuardar = async () => {
+    if (selectedMood === null) return;
+
+    try {
+      if (selectedEntryId) {
+        await updateMood(selectedEntryId, selectedMood, note);
+      } else if (canRegisterNew) {
+        await registerMood(USER_ID, selectedMood, note);
+      } else {
+        return;
+      }
+      await loadMoodData();
+    } catch (e) {
+      console.error("[MoodJournal] Error al guardar:", e);
+      setError("No se pudo guardar el registro de ánimo.");
     }
-    const day = selectedDay ?? new Date().getDate();
-    const newEntries = { ...entries, [day]: { mood: selectedMood, note } };
-    setData(prev => ({ ...prev, entries: newEntries }));
-    console.log(`[MoodJournal] Guardado día ${day}:`, { mood: MOODS[selectedMood].label, note });
-    setSelectedMood(null);
-    setNote("");
-    setSelectedDay(null);
+  };
+
+  const handleEliminar = async () => {
+    if (!selectedEntryId) return;
+    try {
+      await deleteMood(selectedEntryId);
+      setSelectedMood(null);
+      setNote("");
+      setSelectedEntryId(null);
+      await loadMoodData();
+    } catch (e) {
+      console.error("[MoodJournal] Error al eliminar:", e);
+      setError("No se pudo eliminar el registro.");
+    }
   };
 
   return (
     <div style={s.page}>
-      <h2 style={s.pageTitle}>Interfaz: Registro de Ánimo (Mood Journal)</h2>
+      <h2 style={s.pageTitle}>Registro de Ánimo</h2>
+
+      {error && <div style={s.errorBanner}>{error}</div>}
 
       <div style={s.layout}>
         {/* ── Left column: Calendar + Charts ─────────────────────── */}
@@ -206,6 +239,7 @@ export default function MoodJournalPage() {
           {/* Calendar */}
           <div style={s.card}>
             <p style={s.monthLabel}>{monthName}</p>
+            {loading && <p style={s.mutedText}>Cargando...</p>}
             <div style={s.calGrid}>
               {DAY_LABELS.map((d, i) => (
                 <div key={i} style={s.dayHeader}>{d}</div>
@@ -221,21 +255,20 @@ export default function MoodJournalPage() {
                     style={{
                       ...s.dayCell,
                       ...(day ? s.dayCellActive : {}),
-                      ...(isSelected ? { outline: `2px solid #4A90E2`, outlineOffset: 2 } : {}),
+                      ...(isSelected ? { outline: `2px solid #7A7F87`, outlineOffset: 2 } : {}),
                     }}
                   >
                     {day && (
                       <>
                         <span style={s.dayNum}>{day}</span>
                         {entry && (
-                          <span style={{ 
-                            ...s.moodDot, 
-                            background: moodColor, 
-                            display: 'flex', 
-                            justifyContent: 'center', // Centrado horizontal
-                            alignItems: 'center'       // Centrado vertical
+                          <span style={{
+                            ...s.moodDot,
+                            background: moodColor,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center'
                           }}>
-                            {/* El truco aquí es quitar el height del 75% para que no se estire de forma extraña */}
                             <img src={MOODS[entry.mood].dir} style={{ width: '75%', height: 'auto' }} alt="Mood" />
                           </span>
                         )}
@@ -253,7 +286,7 @@ export default function MoodJournalPage() {
             <div style={s.chartsRow}>
               <div>
                 <p style={s.chartSub}>Tendencia mensual</p>
-                <LineChart history={data.monthlyHistory} />
+                {monthlyHistory.length > 0 && <LineChart history={monthlyHistory} />}
               </div>
               <div style={s.chartDivider} />
               <div>
@@ -271,63 +304,88 @@ export default function MoodJournalPage() {
               ))}
             </div>
           </div>
+
+          {/* Insights */}
+          {insights && (
+            <div style={s.card}>
+              <p style={s.chartTitle}>Insights (últimos 30 días)</p>
+              <p style={s.mutedText}>
+                {insights.statistics.total_entries} registro(s) · promedio {insights.statistics.avg_mood.toFixed(1)}/3.0 ·
+                {" "}tendencia <strong>{insights.statistics.mood_trend}</strong>
+              </p>
+              <ul style={s.recList}>
+                {insights.insights.map((txt, i) => <li key={i} style={s.recItem}>{txt}</li>)}
+                {insights.recommendations.map((txt, i) => <li key={`r${i}`} style={s.recItem}>{txt}</li>)}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* ── Right column: New Entry ─────────────────────────────── */}
         <div style={s.card}>
-          <p style={s.sectionTitle}>Nuevo Registro</p>
+          <p style={s.sectionTitle}>{selectedEntryId ? "Editar Registro" : "Nuevo Registro"}</p>
           {selectedDay && (
             <p style={s.selectedDayLabel}>Día {selectedDay} de {monthName}</p>
           )}
-
-          <p style={s.fieldLabel}>Mood:</p>
-          <div style={s.moodRow}>
-            {MOODS.map((m) => (
-              <button
-                key={m.value}
-                onClick={() => {
-                  setSelectedMood(m.value);
-                  console.log(`[MoodJournal] Mood seleccionado: ${m.label}`);
-                }}
-                title={m.label}
-                style={{
-                  ...s.moodBtn,
-                  ...(selectedMood === m.value ? {
-                    outline: `3px solid ${m.color}`,
-                    transform: "scale(1.15)",
-                  } : {}),
-                }}
-              >
-                 {/* Emoji <span style={{ fontSize: 28 }}>{m.emoji}</span> */}
-                <img style={{}} src={m.dir}></img>
-
-              </button>
-            ))}
-          </div>
-
-          {selectedMood !== null && (
-            <p style={{ ...s.moodSelectedLabel, color: MOODS[selectedMood].color }}>
-              {MOODS[selectedMood].label}
+          {!selectedEntryId && !canRegisterNew && (
+            <p style={s.mutedText}>
+              Solo puedes registrar tu ánimo del día de hoy. Este día no tiene un registro guardado.
             </p>
           )}
 
-          <p style={{ ...s.fieldLabel, marginTop: 14 }}>Notas</p>
-          <textarea
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            placeholder="¿Cómo te sientes hoy?"
-            style={s.textarea}
-          />
+          {(selectedEntryId || canRegisterNew) && (
+            <>
+              <p style={s.fieldLabel}>Mood:</p>
+              <div style={s.moodRow}>
+                {MOODS.map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => setSelectedMood(m.value)}
+                    title={m.label}
+                    style={{
+                      ...s.moodBtn,
+                      ...(selectedMood === m.value ? {
+                        outline: `3px solid ${m.color}`,
+                        transform: "scale(1.15)",
+                      } : {}),
+                    }}
+                  >
+                    <img style={{}} src={m.dir}></img>
+                  </button>
+                ))}
+              </div>
 
-          <button
-            onClick={handleGuardar}
-            style={{
-              ...s.saveBtn,
-              ...(selectedMood === null ? { opacity: 0.5, cursor: "not-allowed" } : {}),
-            }}
-          >
-            Guardar
-          </button>
+              {selectedMood !== null && (
+                <p style={{ ...s.moodSelectedLabel, color: MOODS[selectedMood].color }}>
+                  {MOODS[selectedMood].label}
+                </p>
+              )}
+
+              <p style={{ ...s.fieldLabel, marginTop: 14 }}>Notas</p>
+              <textarea
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                placeholder="¿Cómo te sientes hoy?"
+                style={s.textarea}
+              />
+
+              <button
+                onClick={handleGuardar}
+                style={{
+                  ...s.saveBtn,
+                  ...(selectedMood === null ? { opacity: 0.5, cursor: "not-allowed" } : {}),
+                }}
+              >
+                Guardar
+              </button>
+
+              {selectedEntryId && (
+                <button onClick={handleEliminar} style={s.deleteBtn}>
+                  Eliminar registro
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -341,7 +399,7 @@ const s = {
     display: "flex",
     flexDirection: "column",
     padding: "24px 28px",
-    background: "#0f3460",
+    background: "#431720",
     overflowY: "auto",
     fontFamily: "'Segoe UI', 'Roboto', sans-serif",
     color: "#e0e0e0",
@@ -352,6 +410,15 @@ const s = {
     fontWeight: 600,
     marginBottom: 18,
     color: "#ffffff",
+  },
+  errorBanner: {
+    background: "rgba(255,68,68,0.15)",
+    border: "1px solid rgba(255,68,68,0.4)",
+    color: "#ff8080",
+    borderRadius: 10,
+    padding: "10px 14px",
+    marginBottom: 14,
+    fontSize: 13,
   },
   layout: {
     display: "flex",
@@ -379,6 +446,10 @@ const s = {
     textTransform: "capitalize",
     marginBottom: 10,
     textAlign: "center",
+  },
+  mutedText: {
+    fontSize: 12,
+    color: "#a0a0a0",
   },
 
   // Calendar
@@ -464,6 +535,15 @@ const s = {
     fontSize: 11,
     color: "#a0a0a0",
   },
+  recList: {
+    margin: "8px 0 0",
+    paddingLeft: 18,
+  },
+  recItem: {
+    fontSize: 12,
+    color: "#c0c0c0",
+    marginBottom: 6,
+  },
 
   // New Entry panel
   sectionTitle: {
@@ -474,7 +554,7 @@ const s = {
   },
   selectedDayLabel: {
     fontSize: 12,
-    color: "#4A90E2",
+    color: "#B9BEC4",
     marginBottom: 10,
     marginTop: -6,
     textTransform: "capitalize",
@@ -522,12 +602,23 @@ const s = {
   saveBtn: {
     width: "100%",
     padding: "10px 0",
-    background: "#4A90E2",
+    background: "#7A7F87",
     border: "none",
     borderRadius: 24,
     color: "#fff",
     fontSize: 14,
     fontWeight: 600,
     cursor: "pointer",
+  },
+  deleteBtn: {
+    width: "100%",
+    padding: "8px 0",
+    background: "transparent",
+    border: "1px solid rgba(255,68,68,0.4)",
+    borderRadius: 24,
+    color: "#ff8080",
+    fontSize: 13,
+    cursor: "pointer",
+    marginTop: 8,
   },
 };

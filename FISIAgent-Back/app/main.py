@@ -301,7 +301,6 @@ def root():
             "early_adopters": "RAG (ChromaDB + LangChain)",
             "early_majority": "AI-assisted development (GitHub Copilot)",
             "late_majority": "LLMs (Gemini 2.5 Flash)"
-        }   "Dashboard de Bienestar (Mood Logs con SQLite)"
-        ],
+        },
         "status": "running"
     }

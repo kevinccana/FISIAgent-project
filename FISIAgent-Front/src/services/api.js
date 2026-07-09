@@ -60,3 +60,104 @@ export const checkHealth = async () => {
     return { status: 'error' };
   }
 };
+
+// ── Dashboard de Bienestar (Funcionalidad 2: Mood Logs) ─────────────────────
+
+export const registerMood = async (userId, mood, note = '') => {
+  const response = await api.post('/mood/register', { user_id: userId, mood, note });
+  return response.data;
+};
+
+export const getMoodHistory = async (userId, days = 30, limit = null) => {
+  const response = await api.get(`/mood/history/${userId}`, {
+    params: { days, ...(limit ? { limit } : {}) },
+  });
+  return response.data;
+};
+
+export const getMonthlyCalendar = async (userId, year, month) => {
+  const response = await api.get(`/mood/calendar/${userId}/${year}/${month}`);
+  return response.data;
+};
+
+export const getMoodInsights = async (userId, days = 30) => {
+  const response = await api.get(`/mood/insights/${userId}`, { params: { days } });
+  return response.data;
+};
+
+export const updateMood = async (entryId, mood, note = '') => {
+  const response = await api.put(`/mood/${entryId}`, { mood, note });
+  return response.data;
+};
+
+export const deleteMood = async (entryId) => {
+  const response = await api.delete(`/mood/${entryId}`);
+  return response.data;
+};
+
+// ── Planificador Inteligente (Funcionalidad 3: Tasks) ───────────────────────
+
+export const createTask = async (userId, taskData, autoSuggest = false) => {
+  const response = await api.post('/tasks/', {
+    user_id: userId,
+    priority: null,
+    category: 'general',
+    estimated_hours: 1.0,
+    ...taskData,
+    auto_suggest_priority: autoSuggest,
+  });
+  return response.data;
+};
+
+export const getUpcomingTasks = async (userId, days = 7, limit = null) => {
+  const response = await api.get(`/tasks/upcoming/${userId}`, {
+    params: { days, ...(limit ? { limit } : {}) },
+  });
+  return response.data;
+};
+
+export const getOverdueTasks = async (userId) => {
+  const response = await api.get(`/tasks/overdue/${userId}`);
+  return response.data;
+};
+
+export const getTaskStatistics = async (userId, days = 30) => {
+  const response = await api.get(`/tasks/statistics/${userId}`, {
+    params: { days },
+  });
+  return response.data;
+};
+
+export const analyzeDailySchedule = async (userId, date) => {
+  const response = await api.get(`/tasks/schedule/${userId}/${date}`);
+  return response.data;
+};
+
+export const getOrganizationSuggestions = async (userId) => {
+  const response = await api.get(`/tasks/suggestions/${userId}`);
+  return response.data;
+};
+
+export const updateTask = async (taskId, updates) => {
+  const response = await api.put(`/tasks/${taskId}`, updates);
+  return response.data;
+};
+
+export const completeTask = async (taskId) => {
+  const response = await api.post(`/tasks/${taskId}/complete`);
+  return response.data;
+};
+
+export const deleteTask = async (taskId) => {
+  const response = await api.delete(`/tasks/${taskId}`);
+  return response.data;
+};
+
+export const createReminder = async (taskId, remindAt, message = '') => {
+  const response = await api.post('/tasks/reminders', {
+    task_id: taskId,
+    remind_at: remindAt,
+    message,
+  });
+  return response.data;
+};

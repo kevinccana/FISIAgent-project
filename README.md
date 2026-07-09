@@ -1,6 +1,12 @@
 # FISIAgent
 
-Plataforma web de apoyo emocional e inteligencia académica para estudiantes de la **Facultad de Ingeniería de Sistemas e Informática (FISI) — UNSM**. Combina un chatbot conversacional con IA, detección de riesgo psicosocial con un modelo BETO entrenado en español, y recursos de salud mental orientados al contexto universitario peruano.
+Plataforma web de apoyo emocional e inteligencia académica para estudiantes de la **Facultad de Ingeniería de Sistemas e Informática (FISI) — UNSM**. Combina un chatbot conversacional con IA, detección de riesgo psicosocial con un modelo BETO entrenado en español, un dashboard de bienestar emocional y un planificador de tareas con priorización por IA, orientados al contexto universitario peruano.
+
+El proyecto implementa **3 funcionalidades end-to-end** (frontend + backend + persistencia):
+
+1. **Chat de Apoyo Emocional** — conversación con IA, clasificación de riesgo (BETO) y RAG sobre documentos de la FISI-UNSM.
+2. **Dashboard de Bienestar** — registro y seguimiento del estado de ánimo con insights automáticos.
+3. **Planificador Inteligente** — gestión de tareas con priorización y recomendaciones generadas por un agente de IA (Gemini).
 
 > Proyecto académico — Asignatura: Tendencias en el Desarrollo de Software | FISI-UNSM | Semestre 2026-1
 
@@ -23,48 +29,75 @@ Este proyecto aplica cuatro tendencias del **InfoQ Software Architecture and Des
 
 ### Arquitectura Hexagonal (Ports & Adapters) ✅ IMPLEMENTADA
 
-El backend implementa completamente el patrón de **Arquitectura Hexagonal** para aislar el dominio de los detalles de infraestructura:
+El backend implementa completamente el patrón de **Arquitectura Hexagonal** para aislar el dominio de los detalles de infraestructura, cubriendo las 3 funcionalidades (Chat, Mood, Tasks):
 
 ```
 FISIAgent-Back/
   app/
-    core/                          # 🎯 DOMINIO (lógica de negocio)
+    core/                                    # 🎯 DOMINIO (lógica de negocio)
       domain/
-        models.py                  # Entidades: Message, RiskAssessment, ChatResponse
-        exceptions.py              # Excepciones del dominio
+        models.py                            # Entidades del Chat: Message, RiskAssessment, ChatResponse
+        mood_models.py                       # Entidades del Dashboard: MoodEntry, MoodStatistics, MoodLevel
+        task_models.py                       # Entidades del Planificador: Task, Reminder, TaskPriority, TaskStatus, DailySchedule
+        agent.py                             # Contrato base de agente (AgentRole)
+        exceptions.py                        # Excepciones del dominio
+      agents/                                # 🤖 Sistema multi-agente (Agentic AI)
+        coordinator_agent.py                 # CoordinadorAgente (supervisor)
+        risk_analyzer_agent.py               # Clasifica riesgo con BETO
+        rag_retriever_agent.py               # Recupera contexto de ChromaDB
+        empathy_responder_agent.py           # Genera respuesta empática con Gemini
+        planner_agent.py                     # Prioriza tareas y analiza agenda con Gemini
       use_cases/
-        process_conversation.py    # Caso de uso: Procesar conversación
-    
-    ports/                         # 🔌 CONTRATOS (interfaces)
+        process_conversation.py              # Caso de uso: Chat (flujo simple)
+        process_conversation_with_agents.py  # Caso de uso: Chat vía sistema multi-agente
+        mood_use_cases.py                    # 6 casos de uso del Dashboard de Bienestar
+        task_use_cases.py                    # 10 casos de uso del Planificador Inteligente
+
+    ports/                                   # 🔌 CONTRATOS (interfaces)
       inbound/
-        chat_service.py            # Puerto de entrada: ChatServicePort
+        chat_service.py                      # Puerto de entrada: ChatServicePort
       outbound/
-        risk_classifier.py         # Puerto de salida: RiskClassifierPort
-        llm_service.py             # Puerto de salida: LLMServicePort
-        video_recommender.py       # Puerto de salida: VideoRecommenderPort
-    
-    adapters/                      # 🔧 ADAPTADORES (implementaciones)
+        risk_classifier.py                   # RiskClassifierPort
+        llm_service.py                       # LLMServicePort
+        video_recommender.py                 # VideoRecommenderPort
+        rag_service.py                       # RAGServicePort
+        mood_repository.py                   # MoodLogRepositoryPort
+        task_repository.py                   # TaskRepositoryPort
+
+    adapters/                                # 🔧 ADAPTADORES (implementaciones)
       inbound/
         api/
-          chat_router.py           # Adapter FastAPI → Caso de uso
+          chat_router.py                     # POST /chatai
+          mood_router.py                     # /mood/* (Dashboard de Bienestar)
+          task_router.py                     # /tasks/* (Planificador Inteligente)
       outbound/
-        beto_adapter.py            # Implementa RiskClassifierPort con BETO
-        gemini_adapter.py          # Implementa LLMServicePort con Gemini
-        video_recommender_adapter.py # Implementa VideoRecommenderPort
+        beto_adapter.py                      # Implementa RiskClassifierPort con BETO
+        gemini_adapter.py                    # Implementa LLMServicePort con Gemini
+        video_recommender_adapter.py         # Implementa VideoRecommenderPort
+        rag_adapter.py                       # Implementa RAGServicePort con ChromaDB
+        sqlite_mood_repository.py            # Implementa MoodLogRepositoryPort con SQLite
+        sqlite_task_repository.py            # Implementa TaskRepositoryPort con SQLite (tasks + reminders)
+
+    routes/                                  # Rutas legacy (compatibilidad, pre-hexagonal)
+    main.py                                  # Bootstrap + inyección de dependencias (lifespan)
 ```
 
 **Principios aplicados:**
 - ✅ Inversión de dependencias (SOLID-D): El core NO depende de infraestructura
 - ✅ Separación de responsabilidades: Cada capa tiene un propósito claro
 - ✅ Testabilidad: Los ports permiten mocks fáciles para pruebas
-- ✅ Intercambiabilidad: Cambiar BETO por otro modelo solo requiere un nuevo adapter
+- ✅ Intercambiabilidad: Cambiar BETO/SQLite por otra implementación solo requiere un nuevo adapter
 
-### Diseño nativo para la nube
+### Diseño nativo para la nube (planeado — 🔄 no implementado aún)
 
-- Contenedores Docker independientes para backend y frontend
-- Variables de entorno para toda configuración sensible (sin secrets en código)
-- Volúmenes para el modelo BETO (~420 MB) y la base de datos vectorial ChromaDB
-- Desplegable en Railway, Render o cualquier plataforma cloud con soporte Docker
+El proyecto está diseñado pensando en un despliegue cloud-native, pero **todavía no existen Dockerfiles ni docker-compose en el repositorio**. Lo implementado hasta ahora:
+
+- ✅ Variables de entorno para toda configuración sensible (sin secrets en código, vía `.env`)
+
+Pendiente:
+- ⏳ Contenedores Docker independientes para backend y frontend
+- ⏳ Volúmenes para el modelo BETO (~420 MB) y la base de datos vectorial ChromaDB
+- ⏳ Despliegue en Railway, Render o cualquier plataforma cloud con soporte Docker
 
 ---
 
@@ -75,7 +108,8 @@ FISIAgent-Back/
 - **RAG académico FISI-UNSM** — Responde preguntas sobre reglamento, horarios, sílabos y recursos de bienestar con información real de la universidad.
 - **Pipeline multi-agente** — Agentes especializados deciden autónomamente el flujo: evaluar riesgo → buscar en docs → responder o escalar a crisis.
 - **Intervención adaptativa** — Popup de video (nivel Moderado) o protocolo de crisis con Línea 113 (nivel Crítico).
-- **Registro de ánimo** — Calendario interactivo con gráficos para seguimiento del estado emocional diario.
+- **Registro de ánimo** — Calendario interactivo con gráficos para seguimiento del estado emocional diario, conectado a la persistencia SQLite del backend, con insights y recomendaciones automáticas.
+- **Planificador Inteligente** — CRUD de tareas con fecha límite, categoría y horas estimadas; un agente de IA (PlannerAgent) sugiere la prioridad, analiza la carga de la agenda diaria y da recomendaciones de organización.
 
 ---
 
@@ -91,7 +125,7 @@ FISIAgent-Back/
 | RAG — Orquestación | LangChain |
 | HTTP cliente | Axios |
 | Validación de datos | Pydantic v2 |
-| Contenedores | Docker + Docker Compose |
+| Contenedores | Docker + Docker Compose (planeado, aún no implementado) |
 
 ---
 
@@ -180,42 +214,44 @@ FISIAgent-project/
 │   ├── tokenizer_config.json       # Configuración del tokenizador
 │   └── training_args.bin           # Argumentos de entrenamiento
 │
-├── FISIAgent-Back/                 # Backend FastAPI — Arquitectura Hexagonal
+├── FISIAgent-Back/                        # Backend FastAPI — Arquitectura Hexagonal
 │   ├── app/
-│   │   ├── main.py                 # Punto de entrada + carga del modelo (lifespan)
-│   │   ├── core/                   # [En desarrollo] Dominio: lógica de agentes
-│   │   ├── ports/                  # [En desarrollo] Contratos/interfaces
+│   │   ├── main.py                        # Punto de entrada + bootstrap/DI (lifespan)
+│   │   ├── core/                          # Dominio: modelos, agentes y casos de uso (ver árbol arriba)
+│   │   ├── ports/                         # Contratos/interfaces (inbound + outbound)
+│   │   ├── adapters/                      # Implementaciones concretas (inbound + outbound)
+│   │   ├── docs/fisi/                     # Documentos FISI-UNSM para RAG
+│   │   │   ├── reglamento_bienestar.txt
+│   │   │   ├── plan_estudios.txt
+│   │   │   └── faq_estudiantes.txt
 │   │   ├── services/
-│   │   │   ├── nlp.py              # Servicio BETO: cargar_modelo(), clasificar_riesgo()
-│   │   │   └── rag.py              # [En desarrollo] Pipeline RAG con ChromaDB
-│   │   ├── routes/
-│   │   │   ├── gemini.py           # POST /chatai — chat + clasificación de riesgo
-│   │   │   ├── chat.py             # POST /chat — chat básico por palabras clave
-│   │   │   ├── crisis.py           # POST /crisis — detección de crisis
-│   │   │   ├── recursos.py         # GET /recursos — búsqueda por distrito
-│   │   │   └── health.py           # GET /health — health check
+│   │   │   └── nlp.py                     # Servicio BETO: cargar_modelo(), clasificar_riesgo()
+│   │   ├── routes/                        # Rutas legacy (compatibilidad, pre-hexagonal)
+│   │   │   ├── gemini.py                  # POST /chatai (legacy) — chat + clasificación de riesgo
+│   │   │   ├── chat.py                    # POST /chat — chat básico por palabras clave
+│   │   │   ├── crisis.py                  # POST /crisis — detección de crisis
+│   │   │   ├── recursos.py                # GET /recursos — búsqueda por distrito
+│   │   │   └── health.py                  # GET /health — health check
 │   │   ├── models/
-│   │   │   └── chat.py             # Modelos Pydantic
-│   │   ├── docs/                   # [En desarrollo] Documentos FISI-UNSM para RAG
-│   │   │   ├── reglamento.pdf
-│   │   │   ├── plan_estudios.pdf
-│   │   │   └── faq_bienestar.txt
-│   │   ├── M04_GestorRecursos.py   # Gestor de recursos por distrito
-│   │   └── recursos_lima.json      # Base de datos de recursos en Lima
+│   │   │   └── chat.py                    # Modelos Pydantic legacy
+│   │   ├── M04_GestorRecursos.py          # Gestor de recursos por distrito
+│   │   └── recursos_lima.json             # Base de datos de recursos en Lima
+│   ├── fisiagent.db                       # SQLite (mood logs + tasks + reminders), autogenerada
 │   └── requirements.txt
 │
-└── FISIAgent-Front/                 # Frontend React + Vite
+└── FISIAgent-Front/                        # Frontend React + Vite
     └── src/
         ├── pages/
-        │   ├── ChatPage.jsx         # Chat principal
-        │   ├── MoodLogPage.jsx      # Registro de ánimo
-        │   └── ResourcesPage.jsx    # Recursos de apoyo
+        │   ├── ChatPage.jsx                # Chat principal
+        │   ├── MoodLogPage.jsx             # Registro de ánimo (Dashboard de Bienestar)
+        │   ├── TaskPlannerPage.jsx         # Planificador Inteligente (tareas + IA)
+        │   └── ResourcesPage.jsx           # Recursos de apoyo
         ├── components/
-        │   ├── CrisisOverlay.jsx    # Modal de emergencia (nivel Crítico)
-        │   ├── VideoPopup.jsx       # Popup de video (nivel Moderado)
-        │   └── Message.jsx          # Burbuja de mensaje
+        │   ├── CrisisOverlay.jsx           # Modal de emergencia (nivel Crítico)
+        │   ├── VideoPopup.jsx              # Popup de video (nivel Moderado)
+        │   └── Message.jsx                 # Burbuja de mensaje
         ├── services/
-        │   └── api.js               # Cliente HTTP (Axios)
+        │   └── api.js                      # Cliente HTTP (Axios): chat, mood y tasks
         └── styles/
             └── global.css
 ```
@@ -242,7 +278,7 @@ Git LFS almacena archivos grandes fuera del repositorio pero los descarga autom�
 git lfs install
 
 # Clonar el repositorio (descarga automáticamente BETO_model/)
-git clone https://github.com/kevinccana/JoinAI-project.git
+git clone https://github.com/kevinccana/FISIAgent-project.git
 cd FISIAgent-project
 ```
 
@@ -395,6 +431,21 @@ La aplicación estará disponible en `http://localhost:5173`.
 | `GET` | `/mood/insights/{user_id}` | Estadísticas + insights + recomendaciones |
 | `PUT` | `/mood/{entry_id}` | Actualizar registro existente |
 | `DELETE` | `/mood/{entry_id}` | Eliminar registro |
+
+### Planificador Inteligente (Tasks)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/tasks/` | Crear tarea (con sugerencia de prioridad por IA opcional) |
+| `GET` | `/tasks/upcoming/{user_id}` | Tareas próximas a vencer, ordenadas por urgencia |
+| `GET` | `/tasks/overdue/{user_id}` | Tareas vencidas |
+| `GET` | `/tasks/statistics/{user_id}` | Estadísticas de productividad (completitud, tendencia) |
+| `GET` | `/tasks/schedule/{user_id}/{target_date}` | Análisis de la agenda de un día con recomendaciones de IA |
+| `GET` | `/tasks/suggestions/{user_id}` | Diagnóstico y recomendaciones de organización con IA |
+| `PUT` | `/tasks/{task_id}` | Actualizar una tarea |
+| `POST` | `/tasks/{task_id}/complete` | Marcar tarea como completada |
+| `DELETE` | `/tasks/{task_id}` | Eliminar tarea |
+| `POST` | `/tasks/reminders` | Crear un recordatorio asociado a una tarea |
 
 ### Sistema
 
@@ -655,6 +706,83 @@ El sistema detecta automáticamente si una pregunta requiere contexto académico
 
 ---
 
+## Probando el Planificador Inteligente
+
+### Ejemplo 1 - Crear tarea con prioridad sugerida por IA
+
+**Request:** `POST /tasks/`
+```json
+{
+  "user_id": "estudiante_123",
+  "title": "Entregar proyecto de BD2",
+  "description": "Implementar stored procedures y triggers",
+  "due_date": "2026-07-15T23:59:00",
+  "priority": null,
+  "category": "académico",
+  "estimated_hours": 8.0,
+  "auto_suggest_priority": true
+}
+```
+
+**Flujo interno:** el `task_router` invoca `CreateTaskUseCase`, que —al recibir `priority: null` y `auto_suggest_priority: true`— delega en el **PlannerAgent**. Este analiza la fecha límite, la categoría y la carga actual de tareas del usuario (vía Gemini) y devuelve la prioridad sugerida antes de persistir la tarea con `SQLiteTaskRepository`.
+
+**Response:** (201 Created)
+```json
+{
+  "id": 1,
+  "title": "Entregar proyecto de BD2",
+  "priority": 1,
+  "priority_label": "Alta",
+  "priority_emoji": "🟠",
+  "status_label": "Pendiente",
+  "urgency_score": 7.0,
+  "days_until_due": 7
+}
+```
+
+### Ejemplo 2 - Análisis de agenda diaria con IA
+
+**Request:** `GET /tasks/schedule/estudiante_123/2026-07-10`
+
+**Response:**
+```json
+{
+  "date": "2026-07-10",
+  "total_estimated_hours": 8.0,
+  "is_feasible": true,
+  "is_overloaded": false,
+  "recommendations": [
+    "Tu carga del día es manejable (8.0 horas estimadas).",
+    "Prioriza el estudio para Redes en las primeras horas del día cuando estás más concentrado.",
+    "Después de 4 horas de estudio, toma un descanso de 15-20 minutos antes de continuar."
+  ]
+}
+```
+
+**Algoritmo de urgencia:** cada tarea calcula un `urgency_score` (0.0 a 10.0) combinando el peso de su prioridad (1.0 a 4.0) y la proximidad de la fecha límite (1.0 a 6.0), usado para ordenar la lista de tareas próximas.
+
+### Ejemplo 3 - Sugerencias de organización general
+
+**Request:** `GET /tasks/suggestions/estudiante_123`
+
+**Response:**
+```json
+{
+  "diagnosis": "Tienes una buena gestión de tareas en general, pero hay 2 tareas vencidas que requieren atención inmediata.",
+  "recommendations": [
+    "Prioriza inmediatamente las 2 tareas vencidas. Si alguna ya no es relevante, cancélala en lugar de dejarla pendiente.",
+    "Bloquea tiempo en tu calendario específicamente para tus tareas urgentes o de alta prioridad.",
+    "Divide las tareas grandes (>5 horas estimadas) en subtareas más pequeñas para reducir la procrastinación."
+  ],
+  "critical_tasks_count": 2,
+  "overdue_count": 2
+}
+```
+
+**En el frontend**, la página `TaskPlannerPage.jsx` consume estos tres endpoints junto con el CRUD de tareas para mostrar: lista de tareas (vencidas + próximas) con acciones de completar/eliminar, formulario de creación con checkbox "Sugerir prioridad con IA", panel de estadísticas de 30 días, selector de fecha para analizar la agenda, y botón de sugerencias de organización.
+
+---
+
 ## Recursos de emergencia
 
 La aplicación está diseñada para el contexto peruano. En caso de crisis se muestra:
@@ -676,12 +804,14 @@ La aplicación está diseñada para el contexto peruano. En caso de crisis se mu
 | Clasificación de riesgo con BETO | ✅ Funcional (como adapter) |
 | Protocolo de crisis (CrisisOverlay) | ✅ Funcional |
 | Popup de video (nivel Moderado) | ✅ Funcional |
-| Registro de ánimo | ✅ Persistencia completa con SQLite |
-| Insights automáticos | ✅ Análisis de patrones y recomendaciones |
-| Gestión de tareas | ✅ CRUD completo con priorización por IA |
-| Análisis de agenda | ✅ Sugerencias inteligentes con Gemini |
+| Registro de ánimo (backend) | ✅ Persistencia completa con SQLite (6 endpoints `/mood/*`) |
+| Insights automáticos (backend) | ✅ Análisis de patrones y recomendaciones |
+| Interfaz de Registro de ánimo (frontend) | ✅ `MoodLogPage.jsx` conectada a los 6 endpoints de `/mood` |
+| Gestión de tareas (backend) | ✅ CRUD completo con priorización por IA |
+| Análisis de agenda (backend) | ✅ Sugerencias inteligentes con Gemini |
+| Interfaz del Planificador (frontend) | ✅ `TaskPlannerPage.jsx` conectado a los 10 endpoints de `/tasks` |
 | Recursos por distrito | ✅ Funcional (SJL, Comas, Lima Centro) |
-| Docker + despliegue en nube | 🔄 En desarrollo |
+| Docker + despliegue en nube | ⏳ Pendiente (sin Dockerfiles en el repo aún) |
 | Autenticación de usuarios | ⏳ Pendiente |
 
 ### Funcionalidades Implementadas (3/3 requeridas) ✅
@@ -693,6 +823,7 @@ La aplicación está diseñada para el contexto peruano. En caso de crisis se mu
 - **Use Cases:** ProcessConversationWithAgentsUseCase
 - **RAG:** ChromaDB + LangChain + 3 documentos FISI-UNSM
 - **Agentes:** Sistema multi-agente (Coordinador + 3 agentes especializados)
+- **Frontend:** `ChatPage.jsx` + `CrisisOverlay.jsx` + `VideoPopup.jsx`
 
 #### ✅ Funcionalidad 2: Dashboard de Bienestar
 - **Core:** Modelos (MoodEntry, MoodStatistics, MoodLevel)
@@ -702,6 +833,7 @@ La aplicación está diseñada para el contexto peruano. En caso de crisis se mu
 - **API:** 6 endpoints REST completos
 - **Insights:** Algoritmos de análisis de patrones y recomendaciones automáticas
 - **Base de datos:** SQLite con índices optimizados
+- **Frontend:** `MoodLogPage.jsx` (calendario, gráficos e insights) conectado a `/mood/history`, `/mood/insights`, `/mood/register`, `/mood/{id}` (update/delete); funciones cliente en `services/api.js`. El registro/edición solo permite el día actual o días con un registro existente, ya que el backend no soporta crear entradas retroactivas con fecha arbitraria.
 
 #### ✅ Funcionalidad 3: Planificador Inteligente
 - **Core:** Modelos (Task, TaskPriority, TaskStatus, TaskStatistics, DailySchedule)
@@ -715,3 +847,4 @@ La aplicación está diseñada para el contexto peruano. En caso de crisis se mu
   - Análisis de carga diaria con recomendaciones
   - Diagnóstico y sugerencias de organización general
 - **Urgency Score:** Algoritmo que combina prioridad + proximidad de fecha límite
+- **Frontend:** `TaskPlannerPage.jsx` (lista de tareas, formulario con sugerencia de IA, estadísticas, análisis de agenda y sugerencias de organización), funciones cliente en `services/api.js`
