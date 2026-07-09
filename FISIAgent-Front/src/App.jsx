@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ChatPage from './pages/ChatPage';
 import MoodLogPage from './pages/MoodLogPage';
 import ResourcesPage from './pages/ResourcesPage';
+import TaskPlannerPage from './pages/TaskPlannerPage';
 import './styles/global.css';
 
 function App() {
@@ -15,6 +16,8 @@ function App() {
         return <MoodLogPage />;
       case 'resources':
         return <ResourcesPage />;
+      case 'tasks':
+        return <TaskPlannerPage />;
       default:
         return <ChatPage />;
     }
@@ -42,11 +45,17 @@ function App() {
           >
             📊 Registro de Ánimo
           </button>
-          <button 
+          <button
             className={`menu-item ${currentPage === 'resources' ? 'active' : ''}`}
             onClick={() => setCurrentPage('resources')}
           >
             📍 Recursos
+          </button>
+          <button
+            className={`menu-item ${currentPage === 'tasks' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('tasks')}
+          >
+            📅 Planificador
           </button>
         </nav>
       </div>
