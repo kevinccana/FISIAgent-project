@@ -32,3 +32,9 @@ websockets==16.0
 torch
 transformers
 safetensors
+
+# RAG Dependencies (Early Adopters - InfoQ 2025)
+langchain==0.3.18
+langchain-community==0.3.18
+chromadb==0.6.7
+sentence-transformers==3.4.2
