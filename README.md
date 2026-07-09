@@ -21,19 +21,43 @@ Este proyecto aplica cuatro tendencias del **InfoQ Software Architecture and Des
 
 ## Decisiones de arquitectura
 
-### Arquitectura Hexagonal (Ports & Adapters)
+### Arquitectura Hexagonal (Ports & Adapters) ✅ IMPLEMENTADA
 
-El backend sigue el patrón de **Arquitectura Hexagonal** para aislar el dominio de los detalles de infraestructura:
+El backend implementa completamente el patrón de **Arquitectura Hexagonal** para aislar el dominio de los detalles de infraestructura:
 
 ```
 FISIAgent-Back/
   app/
-    core/           ← Dominio: lógica de riesgo, reglas de agentes
-    ports/          ← Contratos (interfaces Python) para NLP, LLM, RAG
-    adapters/
-      inbound/      ← routes/ — FastAPI como puerto de entrada HTTP
-      outbound/     ← services/ — BETO, Gemini, ChromaDB como puertos de salida
+    core/                          # 🎯 DOMINIO (lógica de negocio)
+      domain/
+        models.py                  # Entidades: Message, RiskAssessment, ChatResponse
+        exceptions.py              # Excepciones del dominio
+      use_cases/
+        process_conversation.py    # Caso de uso: Procesar conversación
+    
+    ports/                         # 🔌 CONTRATOS (interfaces)
+      inbound/
+        chat_service.py            # Puerto de entrada: ChatServicePort
+      outbound/
+        risk_classifier.py         # Puerto de salida: RiskClassifierPort
+        llm_service.py             # Puerto de salida: LLMServicePort
+        video_recommender.py       # Puerto de salida: VideoRecommenderPort
+    
+    adapters/                      # 🔧 ADAPTADORES (implementaciones)
+      inbound/
+        api/
+          chat_router.py           # Adapter FastAPI → Caso de uso
+      outbound/
+        beto_adapter.py            # Implementa RiskClassifierPort con BETO
+        gemini_adapter.py          # Implementa LLMServicePort con Gemini
+        video_recommender_adapter.py # Implementa VideoRecommenderPort
 ```
+
+**Principios aplicados:**
+- ✅ Inversión de dependencias (SOLID-D): El core NO depende de infraestructura
+- ✅ Separación de responsabilidades: Cada capa tiene un propósito claro
+- ✅ Testabilidad: Los ports permiten mocks fáciles para pruebas
+- ✅ Intercambiabilidad: Cambiar BETO por otro modelo solo requiere un nuevo adapter
 
 ### Diseño nativo para la nube
 
@@ -262,6 +286,16 @@ venv\Scripts\activate        # Windows
 pip install -r requirements.txt
 ```
 
+> **Nuevas dependencias (RAG + Agentic AI):**
+> - `langchain`, `langchain-community` - Pipeline de documentos
+> - `chromadb` - Base de datos vectorial
+> - `sentence-transformers` - Embeddings multilingües
+> 
+> Si encuentras errores en la instalación de ChromaDB en Windows, ejecuta:
+> ```bash
+> pip install --upgrade chromadb
+> ```
+
 Crear el archivo `.env` con la API key de Gemini:
 
 ```bash
@@ -281,12 +315,34 @@ GEMINI_API_KEY=tu_api_key_aqui
 python -m uvicorn app.main:app --reload
 ```
 
-Al arrancar verás:
+Al arrancar verás los siguientes logs indicando la correcta inicialización:
+
 ```
+[Startup] Inicializando FISIAgent - Hexagonal + Agentic AI + RAG...
 [Startup] Cargando modelo BETO...
 [BETO] Modelo cargado correctamente y listo para inferencia.
-[Startup] BETO listo. Clasificación de riesgo activa.
+[Startup] ✓ BETO cargado correctamente
+[Startup] Inicializando RAG con ChromaDB...
+[Startup] Cargando documentos FISI-UNSM para RAG...
+[Startup] ✓ Cargados 3 documentos
+[Startup] ✓ Generados X chunks
+[Startup] ✓ RAG inicializado correctamente
+[Startup] Creando sistema multi-agente...
+[Startup] ✓ Sistema multi-agente inicializado (3 agentes + coordinador)
+[Startup] ✓ Caso de uso con agentes inicializado
+[Startup] ✓ API router configurado con sistema de agentes
+[Startup] 🚀 FISIAgent listo
+[Startup] 📊 Tendencias InfoQ 2025 implementadas:
+[Startup]    🔴 Innovators: Agentic AI (Multi-Agent)
+[Startup]    🟠 Early Adopters: RAG (ChromaDB + LangChain)
+[Startup]    🟡 Early Majority: AI-assisted development
+[Startup]    🟢 Late Majority: LLMs (Gemini 2.5 Flash)
 ```
+
+**Verificar que RAG funciona:**
+- Se crea automáticamente el directorio `chroma_db/` con la base vectorial persistida
+- Los documentos en `app/docs/fisi/` se cargan y dividen en chunks
+- Si ves `[Startup] ⚠ RAG no disponible`, verifica que los archivos .txt existan
 
 > Si `BETO_model/` no está presente, el servidor igual arranca en modo fallback (detección por palabras clave).
 
@@ -320,12 +376,30 @@ La aplicación estará disponible en `http://localhost:5173`.
 
 ## API Endpoints
 
+### Chat de Apoyo Emocional
+
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/chatai` | Chat con Gemini + clasificación de riesgo con BETO |
-| `POST` | `/chat` | Chat básico por palabras clave |
+| `POST` | `/chatai` | Chat con Gemini + clasificación de riesgo con BETO + RAG |
+| `POST` | `/chat` | Chat básico por palabras clave (legacy) |
 | `POST` | `/crisis` | Detección de crisis (standalone) |
 | `GET` | `/recursos` | Búsqueda de recursos por distrito en Lima |
+
+### Dashboard de Bienestar (Mood Logs)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/mood/register` | Registrar estado de ánimo |
+| `GET` | `/mood/history/{user_id}` | Historial de registros (últimos N días) |
+| `GET` | `/mood/calendar/{user_id}/{year}/{month}` | Calendario mensual para UI |
+| `GET` | `/mood/insights/{user_id}` | Estadísticas + insights + recomendaciones |
+| `PUT` | `/mood/{entry_id}` | Actualizar registro existente |
+| `DELETE` | `/mood/{entry_id}` | Eliminar registro |
+
+### Sistema
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
 | `GET` | `/health` | Health check del servidor |
 | `GET` | `/` | Estado general de la API |
 
@@ -364,6 +438,223 @@ La aplicación estará disponible en `http://localhost:5173`.
 
 ---
 
+## Probando RAG + Sistema Multi-Agente
+
+El sistema detecta automáticamente si una pregunta requiere contexto académico y activa el agente RAG:
+
+### Ejemplo 1 - Pregunta académica (activa RAG)
+
+**Request:**
+```json
+{
+  "history": [
+    { "role": "user", "text": "¿Cuántos créditos mínimos debo llevar por ciclo?" }
+  ]
+}
+```
+
+**Flujo interno:**
+1. **CoordinadorAgente** detecta keyword "créditos" → activa `RAGRetrieverAgent`
+2. **RiskAnalyzerAgent** clasifica riesgo → Control
+3. **RAGRetrieverAgent** busca en ChromaDB → recupera chunks de `plan_estudios.txt`
+4. **EmpathyResponderAgent** genera respuesta con contexto RAG
+
+**Response:**
+```json
+{
+  "respuesta": "Según el plan de estudios de la FISI-UNSM, el mínimo de créditos por ciclo es 12 y el máximo es 24. Si tienes un promedio ponderado mayor a 14, puedes solicitar sobrecarga de hasta 28 créditos. Es importante que planifiques tu carga académica considerando tu capacidad y bienestar. ¿Hay algo específico sobre tu matrícula que te preocupe?",
+  "nivel_riesgo": "control",
+  "video_sugerido": null,
+  "probabilidades": {
+    "control": 0.9123,
+    "moderado": 0.0677,
+    "critico": 0.0200
+  }
+}
+```
+
+### Ejemplo 2 - Pregunta emocional (sin RAG)
+
+**Request:**
+```json
+{
+  "history": [
+    { "role": "user", "text": "Me siento muy ansioso por los exámenes finales" }
+  ]
+}
+```
+
+**Flujo interno:**
+1. **CoordinadorAgente** NO detecta keywords académicas → salta RAG
+2. **RiskAnalyzerAgent** clasifica → Moderado
+3. **EmpathyResponderAgent** genera respuesta empática sin contexto adicional
+4. Se recomienda video (nivel Moderado)
+
+**Response:**
+```json
+{
+  "respuesta": "Entiendo que los exámenes finales pueden generar mucha presión. Es completamente normal sentirse ansioso ante situaciones importantes. Te recomiendo que pruebes técnicas de respiración y organices tu tiempo de estudio. También puedes acudir a la Oficina de Bienestar Estudiantil si necesitas apoyo adicional. Recuerda que cuidar tu bienestar es tan importante como estudiar.",
+  "nivel_riesgo": "moderado",
+  "video_sugerido": {
+    "tipo": "respiracion",
+    "titulo": "Técnica 4-7-8 para reducir ansiedad",
+    "descripcion": "Ejercicio de respiración profunda para calmar la mente en minutos",
+    "url": "https://www.youtube.com/watch?v=gz4G31LGyog",
+    "duracion": "4 min"
+  },
+  "probabilidades": {
+    "control": 0.2156,
+    "moderado": 0.6534,
+    "critico": 0.1310
+  }
+}
+```
+
+### Ejemplo 3 - Pregunta mixta (emocional + académica)
+
+**Request:**
+```json
+{
+  "history": [
+    { "role": "user", "text": "Estoy muy estresado porque desaprobé un curso por segunda vez, ¿qué pasa si lo desapruebo una tercera vez?" }
+  ]
+}
+```
+
+**Flujo interno:**
+1. **CoordinadorAgente** detecta "desaprobé" + "curso" → activa RAG
+2. **RiskAnalyzerAgent** clasifica → Moderado
+3. **RAGRetrieverAgent** recupera información de `faq_estudiantes.txt`
+4. **EmpathyResponderAgent** combina empatía + información oficial
+
+**Response:**
+```json
+{
+  "respuesta": "Entiendo que esta situación te está generando mucho estrés, y es válido sentirte así. Según el reglamento académico de la FISI, desaprobar un curso obligatorio por tercera vez implica la separación temporal de la universidad por un año, pero puedes solicitar reingreso después de ese periodo. Lo importante ahora es que busques apoyo: te recomiendo hablar con tu tutor académico para evaluar estrategias de estudio, y si el estrés está afectando tu rendimiento, la Oficina de Bienestar puede ayudarte. No estás solo en esto.",
+  "nivel_riesgo": "moderado",
+  "video_sugerido": {
+    "tipo": "mindfulness",
+    "titulo": "Mindfulness para reducir estrés académico",
+    "descripcion": "5 minutos de meditación guiada para estudiantes",
+    "url": "https://www.youtube.com/watch?v=3oCC4NDgYrY",
+    "duracion": "5 min"
+  },
+  "probabilidades": {
+    "control": 0.1823,
+    "moderado": 0.6892,
+    "critico": 0.1285
+  }
+}
+```
+
+**Keywords que activan RAG:**
+- Académicas: crédito, curso, ciclo, matrícula, nota, desaprobar, retiro, convalidar
+- Administrativas: beca, bienestar, psicólogo, reglamento, plan, horario
+- Infraestructura: laboratorio, biblioteca, comedor, wifi
+
+---
+
+## Probando Dashboard de Bienestar
+
+### Ejemplo 1 - Registrar estado de ánimo
+
+**Request:** `POST /mood/register`
+```json
+{
+  "user_id": "estudiante_123",
+  "mood": 1,
+  "note": "Día tranquilo y productivo"
+}
+```
+
+**Response:** (201 Created)
+```json
+{
+  "id": 1,
+  "user_id": "estudiante_123",
+  "mood": 1,
+  "mood_label": "Bien",
+  "note": "Día tranquilo y productivo",
+  "timestamp": "2026-07-08T14:30:00"
+}
+```
+
+**Mood levels:**
+- `0` = Muy bien 😊
+- `1` = Bien 🙂
+- `2` = Mal 😟
+- `3` = Muy mal 😢
+
+---
+
+### Ejemplo 2 - Obtener insights automáticos
+
+**Request:** `GET /mood/insights/estudiante_123?days=30`
+
+**Response:**
+```json
+{
+  "statistics": {
+    "period_start": "2026-06-08T00:00:00",
+    "period_end": "2026-07-08T23:59:59",
+    "total_entries": 25,
+    "avg_mood": 1.2,
+    "mood_distribution": {
+      "Muy bien": 8,
+      "Bien": 12,
+      "Mal": 4,
+      "Muy mal": 1
+    },
+    "most_common_mood": "Bien",
+    "mood_trend": "positivo"
+  },
+  "monthly_history": [
+    {"year": 2026, "month": 6, "month_label": "Jun", "avg_mood": 1.3, "entry_count": 22},
+    {"year": 2026, "month": 7, "month_label": "Jul", "avg_mood": 1.2, "entry_count": 25}
+  ],
+  "insights": [
+    "🎉 Tu estado de ánimo ha sido mayormente positivo (promedio: 1.2/3.0)",
+    "Tu estado más frecuente es 'Bien' (48% del tiempo)",
+    "📈 Tu ánimo ha mejorado respecto al mes anterior (+0.1 puntos)"
+  ],
+  "recommendations": [
+    "Sigue registrando tu ánimo para que podamos darte mejores recomendaciones.",
+    "Intenta establecer una rutina de sueño regular y hacer ejercicio moderado."
+  ]
+}
+```
+
+**Algoritmo de insights:**
+- Detecta tendencias (positivo/neutral/negativo según avg_mood)
+- Compara evolución mensual
+- Identifica días críticos (muy mal)
+- Genera recomendaciones personalizadas
+- Alerta si hay patrón preocupante (>= 3 días muy malos)
+
+---
+
+### Ejemplo 3 - Calendario mensual
+
+**Request:** `GET /mood/calendar/estudiante_123/2026/7`
+
+**Response:**
+```json
+{
+  "year": 2026,
+  "month": 7,
+  "entries": {
+    "1": {"mood": 0, "note": "Gran día con amigos"},
+    "3": {"mood": 1, "note": "Tranquilo"},
+    "5": {"mood": 2, "note": "Estrés por exámenes"},
+    "8": {"mood": 0, "note": "Salida con familia"}
+  }
+}
+```
+
+**Uso:** El frontend renderiza un calendario con colores según el mood de cada día.
+
+---
+
 ## Recursos de emergencia
 
 La aplicación está diseñada para el contexto peruano. En caso de crisis se muestra:
@@ -376,15 +667,51 @@ La aplicación está diseñada para el contexto peruano. En caso de crisis se mu
 
 | Funcionalidad | Estado |
 |--------------|--------|
+| **Arquitectura Hexagonal** | ✅ **IMPLEMENTADA** |
+| **RAG (ChromaDB + LangChain)** | ✅ **IMPLEMENTADA** |
+| **Sistema Multi-Agente (Agentic AI)** | ✅ **IMPLEMENTADA** |
+| **Dashboard de Bienestar (SQLite)** | ✅ **IMPLEMENTADA** |
+| **Planificador Inteligente (IA)** | ✅ **IMPLEMENTADA** |
 | Chat con Gemini | ✅ Funcional |
-| Clasificación de riesgo con BETO | ✅ Funcional |
+| Clasificación de riesgo con BETO | ✅ Funcional (como adapter) |
 | Protocolo de crisis (CrisisOverlay) | ✅ Funcional |
 | Popup de video (nivel Moderado) | ✅ Funcional |
-| Registro de ánimo | ✅ Interfaz lista, sin persistencia |
+| Registro de ánimo | ✅ Persistencia completa con SQLite |
+| Insights automáticos | ✅ Análisis de patrones y recomendaciones |
+| Gestión de tareas | ✅ CRUD completo con priorización por IA |
+| Análisis de agenda | ✅ Sugerencias inteligentes con Gemini |
 | Recursos por distrito | ✅ Funcional (SJL, Comas, Lima Centro) |
-| RAG con docs FISI-UNSM | 🔄 En desarrollo |
-| Pipeline multi-agente (Agentic AI) | 🔄 En desarrollo |
-| Arquitectura Hexagonal completa | 🔄 En desarrollo |
 | Docker + despliegue en nube | 🔄 En desarrollo |
 | Autenticación de usuarios | ⏳ Pendiente |
-| Base de datos persistente | ⏳ Pendiente |
+
+### Funcionalidades Implementadas (3/3 requeridas) ✅
+
+#### ✅ Funcionalidad 1: Chat de Apoyo Emocional
+- **Core:** Modelos (RiskAssessment, ChatResponse, Message) + Agent (base)
+- **Ports:** 5 contratos (ChatServicePort + 4 outbound: Risk, LLM, Video, RAG)
+- **Adapters:** BETOAdapter, GeminiAdapter, VideoRecommenderAdapter, RAGAdapter
+- **Use Cases:** ProcessConversationWithAgentsUseCase
+- **RAG:** ChromaDB + LangChain + 3 documentos FISI-UNSM
+- **Agentes:** Sistema multi-agente (Coordinador + 3 agentes especializados)
+
+#### ✅ Funcionalidad 2: Dashboard de Bienestar
+- **Core:** Modelos (MoodEntry, MoodStatistics, MoodLevel)
+- **Ports:** MoodLogRepositoryPort
+- **Adapters:** SQLiteMoodLogRepository (persistencia en fisiagent.db)
+- **Use Cases:** 6 casos de uso (Register, GetHistory, GetCalendar, GetInsights, Update, Delete)
+- **API:** 6 endpoints REST completos
+- **Insights:** Algoritmos de análisis de patrones y recomendaciones automáticas
+- **Base de datos:** SQLite con índices optimizados
+
+#### ✅ Funcionalidad 3: Planificador Inteligente
+- **Core:** Modelos (Task, TaskPriority, TaskStatus, TaskStatistics, DailySchedule)
+- **Ports:** TaskRepositoryPort
+- **Adapters:** SQLiteTaskRepository (tablas tasks + reminders)
+- **Agente IA:** PlannerAgent (priorización inteligente con Gemini)
+- **Use Cases:** 10 casos de uso (Create, Update, Complete, Delete, GetUpcoming, GetOverdue, Statistics, AnalyzeSchedule, GetSuggestions, CreateReminder)
+- **API:** 10 endpoints REST con DTOs
+- **IA Features:** 
+  - Sugerencia automática de prioridad al crear tareas
+  - Análisis de carga diaria con recomendaciones
+  - Diagnóstico y sugerencias de organización general
+- **Urgency Score:** Algoritmo que combina prioridad + proximidad de fecha límite

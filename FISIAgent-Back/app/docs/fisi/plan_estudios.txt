@@ -1,0 +1,99 @@
+PLAN DE ESTUDIOS - INGENIERÍA DE SISTEMAS E INFORMÁTICA
+FISI - UNIVERSIDAD NACIONAL DE SAN MARTÍN
+
+Duración: 10 ciclos (5 años)
+Total de créditos: 220
+
+CICLO I (21 créditos):
+- Matemática Básica (4)
+- Algoritmos y Estructura de Datos I (4)
+- Introducción a la Ingeniería de Sistemas (3)
+- Comunicación y Redacción (3)
+- Inglés I (3)
+- Desarrollo Personal y Liderazgo (2)
+- Actividades Deportivas I (2)
+
+CICLO II (22 créditos):
+- Cálculo I (4)
+- Algoritmos y Estructura de Datos II (4)
+- Arquitectura de Computadoras (3)
+- Física I (4)
+- Inglés II (3)
+- Realidad Nacional y Globalización (2)
+- Actividades Deportivas II (2)
+
+CICLO III (21 créditos):
+- Cálculo II (4)
+- Programación Orientada a Objetos (4)
+- Base de Datos I (4)
+- Física II (4)
+- Inglés III (3)
+- Estadística I (2)
+
+CICLO IV (22 créditos):
+- Ecuaciones Diferenciales (3)
+- Programación Web (4)
+- Base de Datos II (4)
+- Redes de Computadoras I (4)
+- Estadística II (3)
+- Investigación Operativa I (4)
+
+CICLO V (23 créditos):
+- Análisis y Diseño de Sistemas I (4)
+- Ingeniería de Software I (4)
+- Sistemas Operativos (4)
+- Redes de Computadoras II (4)
+- Investigación Operativa II (4)
+- Emprendimiento e Innovación (3)
+
+CICLO VI (22 créditos):
+- Análisis y Diseño de Sistemas II (4)
+- Ingeniería de Software II (4)
+- Inteligencia Artificial (4)
+- Seguridad Informática (4)
+- Gestión de Proyectos de TI (3)
+- Metodología de la Investigación (3)
+
+CICLO VII (21 créditos):
+- Arquitectura de Software (4)
+- Desarrollo de Aplicaciones Móviles (4)
+- Auditoría de Sistemas (3)
+- Computación en la Nube (4)
+- Seminario de Tesis I (3)
+- Electivo I (3)
+
+CICLO VIII (22 créditos):
+- Sistemas Distribuidos (4)
+- Minería de Datos y Big Data (4)
+- Gobierno de TI (3)
+- Internet de las Cosas (IoT) (4)
+- Seminario de Tesis II (4)
+- Electivo II (3)
+
+CICLO IX (20 créditos):
+- Prácticas Pre-Profesionales I (6)
+- Taller de Tesis I (8)
+- Gestión Empresarial (3)
+- Electivo III (3)
+
+CICLO X (20 créditos):
+- Prácticas Pre-Profesionales II (8)
+- Taller de Tesis II (9)
+- Ética Profesional (3)
+
+CURSOS ELECTIVOS (ejemplos):
+- Desarrollo de Videojuegos
+- Blockchain y Criptomonedas
+- Realidad Virtual y Aumentada
+- DevOps y CI/CD
+- Ciberseguridad Avanzada
+- Machine Learning Aplicado
+- Computación Cuántica
+- UX/UI Design
+
+REQUISITOS DE GRADUACIÓN:
+- Aprobar 220 créditos
+- Promedio ponderado mínimo: 11.0
+- Aprobar examen de suficiencia de inglés (nivel B1)
+- Sustentar y aprobar tesis de investigación
+- No tener deudas académicas ni administrativas
