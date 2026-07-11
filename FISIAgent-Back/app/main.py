@@ -266,9 +266,14 @@ app = FastAPI(
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
+# FRONTEND_URL: orígenes adicionales permitidos en producción (ej. la URL de GitHub
+# Pages), separados por coma. Los orígenes de desarrollo local siempre se permiten.
+_dev_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+_prod_origins = [o.strip() for o in os.getenv("FRONTEND_URL", "").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_dev_origins + _prod_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

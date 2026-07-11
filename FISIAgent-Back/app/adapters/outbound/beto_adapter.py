@@ -5,6 +5,7 @@ Implementa el port RiskClassifierPort usando el modelo BETO.
 Encapsula la lógica de clasificación de riesgo psicosocial.
 """
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Optional
 from app.core.domain.models import RiskAssessment, RiskLevel
@@ -13,8 +14,9 @@ from app.ports.outbound.risk_classifier import RiskClassifierPort
 logger = logging.getLogger(__name__)
 
 # ── Constantes ─────────────────────────────────────────────────────────────────
-_BASE_DIR  = Path(__file__).resolve().parent.parent.parent.parent
-_MODEL_DIR = _BASE_DIR / "BETO_model"
+# parents[4]: beto_adapter.py -> outbound -> adapters -> app -> FISIAgent-Back -> repo root
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_MODEL_DIR = Path(os.getenv("BETO_MODEL_PATH", _REPO_ROOT / "BETO_model"))
 
 UMBRAL_CRITICO  = 0.30
 UMBRAL_MODERADO = 0.45

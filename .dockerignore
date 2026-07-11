@@ -1,0 +1,23 @@
+# Frontend (no forma parte de la imagen del backend)
+FISIAgent-Front/node_modules
+FISIAgent-Front/dist
+
+# Python
+**/__pycache__
+**/*.pyc
+FISIAgent-Back/venv
+FISIAgent-Back/.venv
+FISIAgent-Back/chroma_db
+FISIAgent-Back/fisiagent.db
+
+# Secretos / entorno local
+.env
+**/.env
+
+# Duplicado sin usar (ver README)
+JoinAI-Back
+
+# Repo / CI / docs pesados que no aportan al build
+.git
+.github
+*.ipynb

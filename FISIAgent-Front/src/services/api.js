@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// URL fija mientras pruebas
-const API_URL = 'http://localhost:8000';
+// En build de producción (GitHub Pages) se inyecta VITE_API_URL apuntando al backend
+// desplegado (Hugging Face Space). En desarrollo local usa el backend en localhost.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_URL,

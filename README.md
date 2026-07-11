@@ -88,16 +88,15 @@ FISIAgent-Back/
 - ✅ Testabilidad: Los ports permiten mocks fáciles para pruebas
 - ✅ Intercambiabilidad: Cambiar BETO/SQLite por otra implementación solo requiere un nuevo adapter
 
-### Diseño nativo para la nube (planeado — 🔄 no implementado aún)
+### Diseño nativo para la nube ✅ IMPLEMENTADO
 
-El proyecto está diseñado pensando en un despliegue cloud-native, pero **todavía no existen Dockerfiles ni docker-compose en el repositorio**. Lo implementado hasta ahora:
+- ✅ Backend dockerizado (`Dockerfile` en la raíz), listo para correr en cualquier plataforma con soporte Docker
+- ✅ Variables de entorno para toda configuración sensible (`GEMINI_API_KEY`, `FRONTEND_URL`, `BETO_MODEL_PATH`, `VITE_API_URL`) — sin secrets en código
+- ✅ CI/CD con GitHub Actions: push a `main` despliega backend y frontend automáticamente
+- ✅ Frontend estático desplegado en GitHub Pages
+- ✅ Backend (FastAPI + BETO + RAG) desplegado como contenedor Docker en Hugging Face Spaces
 
-- ✅ Variables de entorno para toda configuración sensible (sin secrets en código, vía `.env`)
-
-Pendiente:
-- ⏳ Contenedores Docker independientes para backend y frontend
-- ⏳ Volúmenes para el modelo BETO (~420 MB) y la base de datos vectorial ChromaDB
-- ⏳ Despliegue en Railway, Render o cualquier plataforma cloud con soporte Docker
+Ver la sección [Despliegue en la nube](#despliegue-en-la-nube) para la arquitectura completa y los pasos de configuración.
 
 ---
 
@@ -125,7 +124,10 @@ Pendiente:
 | RAG — Orquestación | LangChain |
 | HTTP cliente | Axios |
 | Validación de datos | Pydantic v2 |
-| Contenedores | Docker + Docker Compose (planeado, aún no implementado) |
+| Contenedores | Docker |
+| Hosting backend | Hugging Face Spaces (SDK Docker) |
+| Hosting frontend | GitHub Pages |
+| CI/CD | GitHub Actions |
 
 ---
 
@@ -400,13 +402,48 @@ La aplicación estará disponible en `http://localhost:5173`.
 
 ## Variables de entorno
 
-| Variable | Descripción | Requerida |
-|----------|-------------|-----------|
-| `GEMINI_API_KEY` | API key de Google Gemini | Sí |
+| Variable | Descripción | Requerida | Dónde se usa |
+|----------|-------------|-----------|--------------|
+| `GEMINI_API_KEY` | API key de Google Gemini | Sí | Backend |
+| `FRONTEND_URL` | Orígenes adicionales permitidos por CORS (ej. la URL de GitHub Pages), separados por coma | No — sin ella solo funciona con `localhost:5173` | Backend |
+| `BETO_MODEL_PATH` | Ruta absoluta a `BETO_model/` dentro del contenedor | No — por defecto busca `BETO_model/` en la raíz del repo | Backend |
+| `VITE_API_URL` | URL pública del backend, usada al compilar el frontend | No — por defecto `http://localhost:8000` | Frontend (build) |
 
 > **Seguridad:** Nunca pongas la API key directamente en el código (`os.getenv("AIzaSy...")`).
 > Siempre usa `os.getenv("GEMINI_API_KEY")` con el valor en `.env`.
 > Si la key fue expuesta en un commit, [regénérala](https://aistudio.google.com/app/apikey) de inmediato.
+
+---
+
+## Despliegue en la nube
+
+Backend y frontend se despliegan por separado y de forma independiente, cada uno disparado por un workflow de GitHub Actions al hacer push a `main`:
+
+```
+git push a main
+   │
+   ├─ .github/workflows/sync-to-hf.yml  ──▶  Hugging Face Spaces (SDK Docker)
+   │    (mirror del repo + Dockerfile raíz)      → backend FastAPI + BETO + RAG
+   │                                              → escucha en el puerto 7860
+   │
+   └─ .github/workflows/deploy-pages.yml ──▶  GitHub Pages
+        (npm run build con VITE_API_URL)          → frontend estático (React/Vite)
+```
+
+### Por qué Hugging Face Spaces para el backend
+
+El backend carga `torch` + `transformers` + `sentence-transformers` + el modelo BETO (~420 MB) en memoria — eso no entra cómodo en el free tier de la mayoría de plataformas (ej. Render free da 512 MB de RAM). El tier gratuito de Spaces (Docker, CPU básico) da bastante más margen y no pide tarjeta de crédito.
+
+**Limitaciones a tener en cuenta:**
+- El disco del Space es efímero: `fisiagent.db` (mood logs + tasks) y `chroma_db/` se reinician en cada rebuild, salvo que actives el add-on de pago de *Persistent Storage*.
+- El Space "duerme" tras un rato de inactividad y tarda unos segundos en despertar (cold start) en la primera consulta.
+- Si el modelo BETO no llegara a cargar por algún motivo, el sistema ya tiene un fallback automático a detección por palabras clave (no se cae, degrada).
+
+### Guía completa paso a paso
+
+La configuración inicial (crear el Space, generar el token de Hugging Face, secrets/variables en GitHub, habilitar Pages), la verificación de que todo quedó corriendo y una sección de troubleshooting con los errores más comunes (CORS, Git LFS, pantalla en blanco, etc.) están documentados en detalle en **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
+Los workflows viven en [.github/workflows/sync-to-hf.yml](.github/workflows/sync-to-hf.yml) y [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml).
 
 ---
 
@@ -811,7 +848,7 @@ La aplicación está diseñada para el contexto peruano. En caso de crisis se mu
 | Análisis de agenda (backend) | ✅ Sugerencias inteligentes con Gemini |
 | Interfaz del Planificador (frontend) | ✅ `TaskPlannerPage.jsx` conectado a los 10 endpoints de `/tasks` |
 | Recursos por distrito | ✅ Funcional (SJL, Comas, Lima Centro) |
-| Docker + despliegue en nube | ⏳ Pendiente (sin Dockerfiles en el repo aún) |
+| Docker + despliegue en nube | ✅ Backend en Hugging Face Spaces, frontend en GitHub Pages, CI con GitHub Actions |
 | Autenticación de usuarios | ⏳ Pendiente |
 
 ### Funcionalidades Implementadas (3/3 requeridas) ✅
