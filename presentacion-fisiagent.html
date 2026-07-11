@@ -1,0 +1,942 @@
+<title>FISIAgent — Exposición del proyecto</title>
+<style>
+  /* ───────────────────────────────────────────────────────────────────────
+     Paleta: la misma identidad rojo-oscuro / plomo ya adoptada por el propio
+     producto (global.css de FISIAgent-Front). Es una presentación para
+     exponer en vivo (proyector) — se compromete deliberadamente a un único
+     mundo visual oscuro, igual que el producto que describe, en vez de
+     adaptarse al tema del espectador.
+     ─────────────────────────────────────────────────────────────────────── */
+  :root {
+    --void: #0d0607;
+    --panel: #1c0e10;
+    --raised: #2c1216;
+    --raised-2: #431720;
+    --line: rgba(237, 234, 232, 0.10);
+    --line-strong: rgba(237, 234, 232, 0.18);
+
+    --ink: #EDEAE8;
+    --ink-muted: #B7ACA8;
+    --ink-faint: #8A7E7A;
+
+    --accent: #C7CBD1;      /* plomo claro — acento primario */
+    --accent-dim: #7A7F87;  /* plomo medio — bordes/soportes */
+    --accent-deep: #5A5F66; /* plomo oscuro — hover/pressed */
+
+    --signal: #FF5A5A;      /* rojo señal — reservado a Agentic AI / crisis */
+    --ok: #6FCF97;
+    --warn: #F2B85C;
+
+    --serif: Iowan Old Style, "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Code", Consolas, "SF Mono", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--sans);
+    overflow: hidden;
+  }
+
+  ::selection { background: var(--accent-dim); color: var(--void); }
+
+  /* ── Stage: caja 16:9 centrada y con "letterbox" ─────────────────────── */
+  .stage-wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(120% 90% at 50% -10%, #2a1013 0%, var(--void) 60%);
+  }
+
+  .stage {
+    position: relative;
+    width: min(100vw, 177.78vh);
+    height: min(100vh, 56.25vw);
+    background: var(--panel);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+
+  /* ── Slides ───────────────────────────────────────────────────────────── */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 5.2% 6.4%;
+    opacity: 0;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+    animation: rise 0.5s ease both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide.active { animation: none; }
+  }
+
+  .kicker {
+    font-family: var(--mono);
+    font-size: clamp(11px, 1vw, 13px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .kicker .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-dim); flex-shrink: 0; }
+
+  h1.title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(28px, 3.4vw, 46px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: clamp(13px, 1.15vw, 16px);
+    color: var(--ink-muted);
+    max-width: 62ch;
+    line-height: 1.5;
+    margin-bottom: 2.2%;
+  }
+
+  .slide-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
+
+  /* ── Utilidades tipográficas ──────────────────────────────────────────── */
+  p, li { font-size: clamp(13px, 1.05vw, 15.5px); line-height: 1.55; color: var(--ink-muted); }
+  strong { color: var(--ink); font-weight: 600; }
+  .lede { font-size: clamp(15px, 1.3vw, 19px); color: var(--ink); line-height: 1.5; max-width: 64ch; }
+  .num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  /* ── Tarjetas ─────────────────────────────────────────────────────────── */
+  .cards { display: grid; gap: 14px; }
+  .cards.n3 { grid-template-columns: repeat(3, 1fr); }
+  .cards.n4 { grid-template-columns: repeat(4, 1fr); }
+  .card {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .card h3 { font-family: var(--serif); font-size: clamp(15px, 1.25vw, 18px); color: var(--ink); font-weight: 600; }
+  .card p { margin: 0; }
+  .card .tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+
+  /* ── Listas con marcador de línea (no bullets genéricos) ─────────────── */
+  ul.plain { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  ul.plain li { padding-left: 16px; position: relative; }
+  ul.plain li::before {
+    content: "";
+    position: absolute; left: 0; top: 0.55em;
+    width: 6px; height: 1.5px; background: var(--accent-dim);
+  }
+
+  /* ── Chips de tendencia (colores ya establecidos por el propio README:
+        Crossing the Chasm — Innovators/Early Adopters/Early Majority/Late
+        Majority. No es decoración: es la codificación real del proyecto. ── */
+  .trend-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    padding: 4px 10px 4px 8px; border: 1px solid var(--line-strong);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .trend-pill .sw { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sw.innovators { background: var(--signal); }
+  .sw.early-adopters { background: #E8A55C; }
+  .sw.early-majority { background: #E8D25C; }
+  .sw.late-majority { background: var(--ok); }
+
+  .trend-block { border-left: 2px solid var(--line-strong); padding-left: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .trend-block.on { border-left-color: var(--accent-dim); }
+  .trend-block .head { display: flex; align-items: center; gap: 10px; }
+  .trend-block h4 { font-family: var(--serif); font-size: 15px; color: var(--ink); font-weight: 600; }
+  .trend-block .status { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin-left: auto; }
+  .trend-block.on .status { color: var(--ok); }
+
+  /* ── Tablas / Matrices ────────────────────────────────────────────────── */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); }
+  table.matrix { width: 100%; border-collapse: collapse; font-size: clamp(11.5px, 0.95vw, 13.5px); }
+  table.matrix th, table.matrix td {
+    padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  table.matrix thead th {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-faint); background: var(--raised); position: sticky; top: 0;
+  }
+  table.matrix td.req { color: var(--ink); white-space: normal; max-width: 260px; font-weight: 500; }
+  table.matrix td.mark { text-align: center; font-family: var(--mono); font-size: 15px; }
+  table.matrix td.mark.yes { color: var(--ok); }
+  table.matrix td.mark.no { color: var(--ink-faint); }
+  table.matrix tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+  /* ── Arquitectura hexagonal: 3 carriles ───────────────────────────────── */
+  .arch-lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; flex: 1; min-height: 0; }
+  .lane { border: 1px solid var(--line); background: var(--raised); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .lane .lane-title { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--line-strong); padding-bottom: 8px; }
+  .lane .items { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+  .chip { font-size: 12px; color: var(--ink-muted); padding: 6px 9px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); }
+  .chip strong { display: block; font-size: 12.5px; color: var(--ink); font-family: var(--mono); }
+
+  /* ── Contexto: fila de cajas conectadas ───────────────────────────────── */
+  .context-row { display: flex; align-items: stretch; gap: 0; flex: 1; }
+  .ctx-box {
+    flex: 1; border: 1px solid var(--line-strong); background: var(--raised);
+    padding: 16px; display: flex; flex-direction: column; gap: 6px; justify-content: center;
+    min-width: 0;
+  }
+  .ctx-box.center { background: var(--raised-2); border-color: var(--accent-dim); }
+  .ctx-box .label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+  .ctx-box .name { font-family: var(--serif); font-size: 15px; color: var(--ink); font-weight: 600; }
+  .ctx-box .desc { font-size: 11.5px; color: var(--ink-muted); line-height: 1.4; }
+  .ctx-arrow { flex: 0 0 46px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-family: var(--mono); font-size: 18px; }
+  .ctx-stack { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+  /* ── Secuencia / vista de proceso ─────────────────────────────────────── */
+  .sequence { display: flex; flex-direction: column; gap: 0; flex: 1; justify-content: center; }
+  .seq-step { display: grid; grid-template-columns: 34px 1fr; gap: 16px; position: relative; padding-bottom: 18px; }
+  .seq-step:last-child { padding-bottom: 0; }
+  .seq-num {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--accent-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--accent);
+    background: var(--panel); z-index: 1;
+  }
+  .seq-step:not(:last-child)::before {
+    content: ""; position: absolute; left: 17px; top: 34px; bottom: 0; width: 1px;
+    background: var(--line-strong);
+  }
+  .seq-content { display: flex; flex-direction: column; gap: 2px; padding-top: 4px; }
+  .seq-content .who { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.03em; }
+  .seq-content .what { font-size: 13.5px; color: var(--ink); }
+
+  /* ── Separador de módulo ──────────────────────────────────────────────── */
+  .divider { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 16px; }
+  .divider .mod-index {
+    font-family: var(--serif); font-size: clamp(64px, 9vw, 120px); line-height: 1;
+    color: transparent; -webkit-text-stroke: 1.5px var(--accent-dim);
+  }
+  .divider h1.title { font-size: clamp(36px, 4.4vw, 58px); }
+  .divider .subtitle { font-size: clamp(14px, 1.3vw, 18px); }
+  .divider .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── Bloques de dos columnas ──────────────────────────────────────────── */
+  .two-col { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; flex: 1; min-height: 0; }
+  .two-col.even { grid-template-columns: 1fr 1fr; }
+  .col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .col h4 { font-family: var(--serif); font-size: 14px; color: var(--accent); font-weight: 600; text-transform: none; }
+
+  /* ── Deploy diagram ───────────────────────────────────────────────────── */
+  .deploy { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .deploy-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .deploy-box { border: 1px solid var(--line-strong); background: var(--raised); padding: 12px 14px; }
+  .deploy-box .t { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.05em; }
+  .deploy-box .d { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+  .deploy-arrow-down { display: flex; justify-content: center; color: var(--ink-faint); font-size: 16px; }
+
+  /* ── Cierre ───────────────────────────────────────────────────────────── */
+  .closing { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 20px; }
+  .closing h1.title { font-size: clamp(38px, 5vw, 64px); }
+
+  /* ── Chrome: contador, progreso, flechas ──────────────────────────────── */
+  .chrome-top {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px; background: transparent; z-index: 5;
+  }
+  .chrome-top .bar { height: 100%; background: var(--accent-dim); width: 0%; transition: width 0.35s ease; }
+
+  .counter {
+    position: absolute; right: 18px; bottom: 14px; font-family: var(--mono); font-size: 11.5px;
+    color: var(--ink-faint); letter-spacing: 0.04em; z-index: 5;
+  }
+  .brandmark {
+    position: absolute; left: 18px; bottom: 14px; font-family: var(--mono); font-size: 11px;
+    color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase; z-index: 5;
+  }
+
+  .nav-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--line-strong); background: rgba(13,6,7,0.55);
+    color: var(--ink-muted); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 6; transition: all 0.15s ease;
+  }
+  .nav-btn:hover { color: var(--ink); border-color: var(--accent-dim); background: rgba(13,6,7,0.85); }
+  .nav-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .nav-btn.prev { left: 14px; }
+  .nav-btn.next { right: 14px; }
+
+  .click-zone { position: absolute; top: 0; bottom: 0; width: 26%; z-index: 4; cursor: pointer; }
+  .click-zone.left { left: 0; }
+  .click-zone.right { right: 0; }
+
+  .help {
+    position: absolute; left: 18px; top: 14px; font-family: var(--mono); font-size: 10.5px;
+    color: var(--ink-faint); letter-spacing: 0.04em; opacity: 0.7; z-index: 5;
+  }
+
+  @media (max-width: 720px), (max-height: 480px) {
+    .arch-lanes { grid-template-columns: 1fr; overflow-y: auto; }
+    .cards.n3, .cards.n4 { grid-template-columns: 1fr; overflow-y: auto; }
+    .two-col { grid-template-columns: 1fr; overflow-y: auto; }
+    .context-row { flex-direction: column; }
+    .ctx-arrow { transform: rotate(90deg); flex: 0 0 24px; }
+  }
+</style>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+
+    <!-- 0 — PORTADA ======================================================= -->
+    <section class="slide active">
+      <div class="closing" style="justify-content: center;">
+        <div class="kicker"><span class="dot"></span>Tendencias en el Desarrollo de Software · FISI–UNSM · 2026-1</div>
+        <h1 class="title" style="font-size: clamp(46px, 7vw, 88px);">FISIAgent</h1>
+        <p class="lede">
+          Plataforma de acompañamiento emocional e inteligencia académica para estudiantes de la
+          Facultad de Ingeniería de Sistemas e Informática — construida sobre Arquitectura Hexagonal
+          y cuatro tendencias de vanguardia en ingeniería de software.
+        </p>
+        <div class="pills">
+          <span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span>
+          <span class="trend-pill"><span class="sw early-adopters"></span>RAG</span>
+          <span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span>
+          <span class="trend-pill"><span class="sw late-majority"></span>LLMs</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1 — DESCRIPCIÓN DEL PROYECTO ===================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Descripción del proyecto</div>
+      <h1 class="title">Tres funcionalidades, una arquitectura común</h1>
+      <p class="subtitle">FISIAgent acompaña al estudiante en tres frentes distintos, todos construidos sobre el mismo backend hexagonal (FastAPI) y consumidos por un único frontend (React + Vite).</p>
+      <div class="slide-body">
+        <div class="cards n3" style="flex:1;">
+          <div class="card">
+            <span class="tag">Módulo 1</span>
+            <h3>Chat de Apoyo Emocional</h3>
+            <p>Conversación empática en tiempo real, con detección de riesgo psicosocial (BETO) y respuestas ancladas en documentos reales de la FISI-UNSM (RAG).</p>
+          </div>
+          <div class="card">
+            <span class="tag">Módulo 2</span>
+            <h3>Dashboard de Bienestar</h3>
+            <p>Registro diario de estado de ánimo con calendario, gráficos históricos e insights automáticos generados a partir de reglas de negocio.</p>
+          </div>
+          <div class="card">
+            <span class="tag">Módulo 3</span>
+            <h3>Planificador Inteligente</h3>
+            <p>Gestión de tareas académicas con priorización y recomendaciones de organización sugeridas por un agente de IA (Gemini).</p>
+          </div>
+        </div>
+        <p style="text-align:center; color: var(--ink-faint); font-family: var(--mono); font-size: 11.5px;">
+          FastAPI · Arquitectura Hexagonal (Ports &amp; Adapters) · React + Vite · SQLite · ChromaDB · Google Gemini 2.5 Flash
+        </p>
+      </div>
+    </section>
+
+    <!-- 2 — PROBLEMA / CONTEXTO DEL CASO DE NEGOCIO ====================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Caso de negocio</div>
+      <h1 class="title">El problema que origina el proyecto</h1>
+      <div class="slide-body two-col even">
+        <div class="col">
+          <h4>El contexto</h4>
+          <ul class="plain">
+            <li>El estrés académico y la ansiedad son frecuentes entre estudiantes universitarios, y con frecuencia no se detectan a tiempo.</li>
+            <li>El acceso a apoyo psicológico presencial es limitado: horarios de oficina, estigma social, o simplemente desconocimiento de los recursos disponibles.</li>
+            <li>La información institucional (reglamento, plan de estudios, bienestar) está dispersa y es difícil de consultar en el momento en que realmente se necesita.</li>
+            <li>La sobrecarga de tareas académicas —sin una forma de priorizarlas— es en sí misma una fuente de estrés adicional.</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h4>La oportunidad</h4>
+          <ul class="plain">
+            <li>Un canal conversacional disponible 24/7 reduce la fricción de pedir ayuda por primera vez.</li>
+            <li>Un modelo de clasificación de riesgo permite escalar a un protocolo de crisis solo cuando realmente hace falta, sin intervenir de más.</li>
+            <li>Anclar las respuestas en documentos oficiales (RAG) evita que el chatbot "invente" políticas académicas.</li>
+            <li>Un asistente de planificación con IA convierte una lista de tareas en un plan priorizado y manejable.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 — REQUERIMIENTOS DEL CASO DE NEGOCIO (GENERAL) ================= -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Caso de negocio</div>
+      <h1 class="title">Principales requerimientos</h1>
+      <div class="slide-body two-col even">
+        <div class="col">
+          <h4>Funcionales</h4>
+          <ul class="plain">
+            <li><strong>RF1.</strong> Brindar apoyo emocional conversacional disponible en todo momento.</li>
+            <li><strong>RF2.</strong> Detectar señales de riesgo psicosocial y escalar a un protocolo de crisis (Línea 113) cuando corresponda.</li>
+            <li><strong>RF3.</strong> Responder preguntas académicas con información institucional real, no genérica.</li>
+            <li><strong>RF4.</strong> Permitir el registro y seguimiento histórico del estado de ánimo del estudiante.</li>
+            <li><strong>RF5.</strong> Ayudar a organizar y priorizar la carga de tareas académicas.</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h4>No funcionales</h4>
+          <ul class="plain">
+            <li><strong>RNF1.</strong> Arquitectura mantenible y extensible — cada funcionalidad debe poder evolucionar sin acoplarse a las demás.</li>
+            <li><strong>RNF2.</strong> Costo operativo bajo — modelos gratuitos o de free tier (BETO local, Gemini free tier).</li>
+            <li><strong>RNF3.</strong> Resiliencia — si un modelo de IA no carga, el sistema debe degradar, no caerse.</li>
+            <li><strong>RNF4.</strong> Desplegable en la nube de forma reproducible (Docker + CI/CD).</li>
+            <li><strong>RNF5.</strong> <em>(Requisito del curso)</em> aplicar 3 funcionalidades end-to-end y 4 tendencias de ingeniería de software vigentes.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 — LAS 4 TENDENCIAS (OVERVIEW) =================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Tendencias de software · InfoQ 2025</div>
+      <h1 class="title">Una tendencia por etapa de adopción</h1>
+      <p class="subtitle">El proyecto aplica cuatro tendencias del InfoQ Software Architecture and Design Trends Report 2025, una por cada etapa del modelo <em>Crossing the Chasm</em>.</p>
+      <div class="slide-body">
+        <div class="cards n4" style="flex:1;">
+          <div class="card">
+            <span class="trend-pill"><span class="sw innovators"></span>Innovators</span>
+            <h3>Agentic AI</h3>
+            <p>Sistemas donde agentes especializados deciden autónomamente el flujo de una tarea, en vez de seguir un guion fijo.</p>
+          </div>
+          <div class="card">
+            <span class="trend-pill"><span class="sw early-adopters"></span>Early Adopters</span>
+            <h3>RAG</h3>
+            <p>Retrieval-Augmented Generation: anclar las respuestas del LLM en documentos reales antes de generar texto.</p>
+          </div>
+          <div class="card">
+            <span class="trend-pill"><span class="sw early-majority"></span>Early Majority</span>
+            <h3>AI-assisted development</h3>
+            <p>Modelos especializados en vez de genéricos, y asistentes de código (Copilot/Claude) como parte del flujo de trabajo.</p>
+          </div>
+          <div class="card">
+            <span class="trend-pill"><span class="sw late-majority"></span>Late Majority</span>
+            <h3>LLMs</h3>
+            <p>Modelos de lenguaje de propósito general (Gemini 2.5 Flash) ya asentados como motor conversacional.</p>
+          </div>
+        </div>
+        <p style="text-align:center; color: var(--ink-faint); font-size: 12.5px;">
+          No las tres funcionalidades usan las cuatro tendencias por igual — el detalle está en cada módulo.
+        </p>
+      </div>
+    </section>
+
+    <!-- 5 — ARQUITECTURA HEXAGONAL GENERAL ================================ -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Arquitectura · Panorama general</div>
+      <h1 class="title">Arquitectura Hexagonal (Ports &amp; Adapters)</h1>
+      <p class="subtitle">Las tres funcionalidades comparten la misma estructura de tres capas — es lo que permite que cada una adopte tendencias distintas sin acoplarse entre sí.</p>
+      <div class="arch-lanes">
+        <div class="lane">
+          <div class="lane-title">Core — Dominio</div>
+          <div class="items">
+            <div class="chip"><strong>domain/</strong>Message · RiskAssessment · MoodEntry · Task · TaskPriority</div>
+            <div class="chip"><strong>agents/</strong>Coordinador · RiskAnalyzer · RAGRetriever · Empathy · Planner</div>
+            <div class="chip"><strong>use_cases/</strong>Chat (2) · Mood (6) · Tasks (10)</div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-title">Ports — Contratos</div>
+          <div class="items">
+            <div class="chip"><strong>inbound/</strong>ChatServicePort</div>
+            <div class="chip"><strong>outbound/</strong>RiskClassifierPort · LLMServicePort · RAGServicePort</div>
+            <div class="chip"><strong>outbound/</strong>MoodLogRepositoryPort · TaskRepositoryPort</div>
+          </div>
+        </div>
+        <div class="lane">
+          <div class="lane-title">Adapters — Infraestructura</div>
+          <div class="items">
+            <div class="chip"><strong>inbound/api/</strong>chat_router · mood_router · task_router</div>
+            <div class="chip"><strong>outbound/</strong>BETOAdapter · GeminiAdapter · RAGAdapter</div>
+            <div class="chip"><strong>outbound/</strong>SQLiteMoodLogRepository · SQLiteTaskRepository</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 — SEPARADOR MÓDULO 1 ============================================ -->
+    <section class="slide">
+      <div class="divider">
+        <div class="mod-index">01</div>
+        <div class="kicker"><span class="dot"></span>Módulo 1</div>
+        <h1 class="title">Chat de Apoyo Emocional</h1>
+        <p class="subtitle">Multi-agente + RAG + clasificación de riesgo — el módulo donde convergen las cuatro tendencias.</p>
+        <div class="pills">
+          <span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span>
+          <span class="trend-pill"><span class="sw early-adopters"></span>RAG</span>
+          <span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span>
+          <span class="trend-pill"><span class="sw late-majority"></span>LLMs</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 — M1 TENDENCIAS APLICADAS ======================================= -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 1 · Tendencias aplicadas</div>
+      <h1 class="title">Cómo se implementó cada tendencia</h1>
+      <div class="slide-body" style="justify-content: center; gap: 22px;">
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span><h4>Sistema multi-agente</h4><span class="status">Implementado</span></div>
+          <p><strong>CoordinadorAgente</strong> orquesta a <strong>RiskAnalyzerAgent</strong>, <strong>RAGRetrieverAgent</strong> y <strong>EmpathyResponderAgent</strong>, decidiendo en tiempo real si activar RAG y si escalar a crisis. <span class="num">core/agents/</span></p>
+        </div>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw early-adopters"></span>RAG</span><h4>ChromaDB + LangChain</h4><span class="status">Implementado</span></div>
+          <p>Recupera fragmentos de 3 documentos reales de la FISI-UNSM (reglamento, plan de estudios, FAQ) cuando el mensaje contiene keywords académicas. <span class="num">rag_adapter.py</span></p>
+        </div>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span><h4>BETO especializado</h4><span class="status">Implementado</span></div>
+          <p>Modelo BERT en español con fine-tuning propio para clasificación de riesgo, en vez de un clasificador de propósito general.</p>
+        </div>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw late-majority"></span>LLMs</span><h4>Gemini 2.5 Flash</h4><span class="status">Implementado</span></div>
+          <p>Genera la respuesta empática final, combinando el nivel de riesgo detectado y el contexto recuperado por RAG.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 — M1 MATRIZ ====================================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 1 · Matriz tendencias × requerimientos</div>
+      <h1 class="title">Qué tendencia resuelve qué requerimiento</h1>
+      <div class="slide-body" style="justify-content:center;">
+        <div class="table-wrap">
+          <table class="matrix">
+            <thead>
+              <tr><th>Requerimiento</th><th>Agentic AI</th><th>RAG</th><th>AI-assisted dev</th><th>LLMs</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="req">RF1 — Apoyo emocional 24/7</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td></tr>
+              <tr><td class="req">RF2 — Detección de riesgo psicosocial</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RF3 — Respuestas ancladas en info. institucional</td><td class="mark yes">✓</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RF2 — Escalamiento a protocolo de crisis</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark no">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="color: var(--ink-faint); font-size: 12px;">✓ contribuye directamente a satisfacer el requerimiento · — no aplica en este módulo</p>
+      </div>
+    </section>
+
+    <!-- 9 — M1 CONTEXTO + ARQUITECTURA ==================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 1 · Contexto y arquitectura del software</div>
+      <h1 class="title">De la conversación a la respuesta</h1>
+      <div class="slide-body" style="gap: 22px;">
+        <div class="context-row">
+          <div class="ctx-box"><span class="label">Actor</span><span class="name">Estudiante</span><span class="desc">Envía mensajes vía Chat</span></div>
+          <div class="ctx-arrow">→</div>
+          <div class="ctx-box center"><span class="label">Sistema</span><span class="name">FISIAgent · Chat</span><span class="desc">POST /chatai</span></div>
+          <div class="ctx-arrow">→</div>
+          <div class="ctx-stack">
+            <div class="ctx-box"><span class="label">Externo</span><span class="name">BETO (local)</span><span class="desc">Clasificación de riesgo</span></div>
+            <div class="ctx-box"><span class="label">Externo</span><span class="name">ChromaDB (local)</span><span class="desc">Recuperación RAG</span></div>
+            <div class="ctx-box"><span class="label">Externo</span><span class="name">Gemini API</span><span class="desc">Generación de respuesta</span></div>
+          </div>
+        </div>
+        <div class="arch-lanes" style="flex: 1;">
+          <div class="lane">
+            <div class="lane-title">Dominio</div>
+            <div class="items">
+              <div class="chip"><strong>models.py</strong>Message, RiskAssessment, ChatResponse</div>
+              <div class="chip"><strong>agents/</strong>4 agentes especializados</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-title">Puertos</div>
+            <div class="items">
+              <div class="chip"><strong>inbound</strong>ChatServicePort</div>
+              <div class="chip"><strong>outbound</strong>RiskClassifierPort, LLMServicePort, RAGServicePort</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-title">Adaptadores</div>
+            <div class="items">
+              <div class="chip"><strong>inbound</strong>chat_router.py</div>
+              <div class="chip"><strong>outbound</strong>BETOAdapter, GeminiAdapter, RAGAdapter</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 — M1 VISTA DE PROCESO ========================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 1 · Vista de proceso</div>
+      <h1 class="title">Secuencia de una petición de chat</h1>
+      <div class="slide-body">
+        <div class="sequence">
+          <div class="seq-step"><div class="seq-num">1</div><div class="seq-content"><span class="who">chat_router.py</span><span class="what">Recibe <span class="num">POST /chatai</span> y traduce el DTO a la entidad de dominio <strong>Message</strong>.</span></div></div>
+          <div class="seq-step"><div class="seq-num">2</div><div class="seq-content"><span class="who">CoordinadorAgente</span><span class="what">Evalúa el mensaje y decide el orden de ejecución de los agentes.</span></div></div>
+          <div class="seq-step"><div class="seq-num">3</div><div class="seq-content"><span class="who">RiskAnalyzerAgent → BETO</span><span class="what">Clasifica el riesgo: <strong>control</strong>, <strong>moderado</strong> o <strong>crítico</strong>.</span></div></div>
+          <div class="seq-step"><div class="seq-num">4</div><div class="seq-content"><span class="who">RAGRetrieverAgent → ChromaDB</span><span class="what">Si el mensaje toca temas académicos, recupera contexto documental.</span></div></div>
+          <div class="seq-step"><div class="seq-num">5</div><div class="seq-content"><span class="who">EmpathyResponderAgent → Gemini</span><span class="what">Genera la respuesta final combinando riesgo + contexto RAG.</span></div></div>
+          <div class="seq-step"><div class="seq-num">6</div><div class="seq-content"><span class="who">Frontend</span><span class="what">Si el nivel es <strong>moderado</strong> muestra un video; si es <strong>crítico</strong>, activa <strong>CrisisOverlay</strong> (Línea 113).</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 — SEPARADOR MÓDULO 2 =========================================== -->
+    <section class="slide">
+      <div class="divider">
+        <div class="mod-index">02</div>
+        <div class="kicker"><span class="dot"></span>Módulo 2</div>
+        <h1 class="title">Dashboard de Bienestar</h1>
+        <p class="subtitle">Persistencia + analítica basada en reglas — el módulo que demuestra que no todo requiere IA generativa.</p>
+        <div class="pills">
+          <span class="trend-pill" style="opacity:0.45"><span class="sw innovators"></span>Agentic AI</span>
+          <span class="trend-pill" style="opacity:0.45"><span class="sw early-adopters"></span>RAG</span>
+          <span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span>
+          <span class="trend-pill" style="opacity:0.45"><span class="sw late-majority"></span>LLMs</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 — M2 TENDENCIAS (HONESTO) ======================================= -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 2 · Tendencias aplicadas</div>
+      <h1 class="title">Por qué este módulo no usa las cuatro</h1>
+      <div class="slide-body" style="justify-content: center; gap: 22px;">
+        <p class="lede">El registro de ánimo, el calendario y los insights son <strong>lógica de negocio determinística</strong> (promedios, tendencias, umbrales) — no requieren un LLM para generar valor, y forzar uno habría sido sobre-ingeniería.</p>
+        <div class="trend-block">
+          <div class="head"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span><h4>Único punto de contacto real</h4><span class="status">Implementado</span></div>
+          <p>Los 6 casos de uso y los algoritmos de <code class="num">_generate_insights</code> / <code class="num">_generate_recommendations</code> se escribieron con asistencia de Copilot/Claude, siguiendo el mismo patrón hexagonal que los otros módulos.</p>
+        </div>
+        <div class="trend-block">
+          <div class="head"><h4>Agentic AI, RAG, LLMs</h4><span class="status" style="color: var(--ink-faint);">No aplica</span></div>
+          <p>No hay recuperación documental, ni generación de lenguaje, ni un agente que decida un flujo — las "recomendaciones" son reglas explícitas sobre <span class="num">avg_mood</span> y <span class="num">mood_trend</span>, completamente auditables.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 — M2 MATRIZ ===================================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 2 · Matriz tendencias × requerimientos</div>
+      <h1 class="title">Qué tendencia resuelve qué requerimiento</h1>
+      <div class="slide-body" style="justify-content:center;">
+        <div class="table-wrap">
+          <table class="matrix">
+            <thead>
+              <tr><th>Requerimiento</th><th>Agentic AI</th><th>RAG</th><th>AI-assisted dev</th><th>LLMs</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="req">RF4 — Registro diario de ánimo</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RF4 — Visualización histórica</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RF4 — Insights y recomendaciones</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RNF1 — Persistencia confiable</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="color: var(--ink-faint); font-size: 12px;">La columna que domina este módulo es <strong style="color: var(--ink-muted);">AI-assisted dev</strong> — el resto de tendencias simplemente no aportaban valor aquí.</p>
+      </div>
+    </section>
+
+    <!-- 14 — M2 CONTEXTO + ARQUITECTURA ==================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 2 · Contexto y arquitectura del software</div>
+      <h1 class="title">Del registro a la persistencia</h1>
+      <div class="slide-body" style="gap: 22px;">
+        <div class="context-row">
+          <div class="ctx-box"><span class="label">Actor</span><span class="name">Estudiante</span><span class="desc">Registra su ánimo del día</span></div>
+          <div class="ctx-arrow">→</div>
+          <div class="ctx-box center"><span class="label">Sistema</span><span class="name">FISIAgent · Mood</span><span class="desc">6 endpoints /mood/*</span></div>
+          <div class="ctx-arrow">→</div>
+          <div class="ctx-box"><span class="label">Externo</span><span class="name">SQLite</span><span class="desc">fisiagent.db (tabla mood_logs)</span></div>
+        </div>
+        <div class="arch-lanes" style="flex: 1;">
+          <div class="lane">
+            <div class="lane-title">Dominio</div>
+            <div class="items">
+              <div class="chip"><strong>mood_models.py</strong>MoodEntry · MoodStatistics · MoodLevel</div>
+              <div class="chip"><strong>use_cases/</strong>Register, GetHistory, GetCalendar, GetInsights, Update, Delete</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-title">Puertos</div>
+            <div class="items">
+              <div class="chip"><strong>outbound</strong>MoodLogRepositoryPort</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-title">Adaptadores</div>
+            <div class="items">
+              <div class="chip"><strong>inbound</strong>mood_router.py</div>
+              <div class="chip"><strong>outbound</strong>SQLiteMoodLogRepository</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15 — M2 VISTA DE PROCESO =========================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 2 · Vista de proceso</div>
+      <h1 class="title">Secuencia de un registro de ánimo</h1>
+      <div class="slide-body">
+        <div class="sequence">
+          <div class="seq-step"><div class="seq-num">1</div><div class="seq-content"><span class="who">mood_router.py</span><span class="what">Recibe <span class="num">POST /mood/register</span> con <span class="num">{ user_id, mood, note }</span>.</span></div></div>
+          <div class="seq-step"><div class="seq-num">2</div><div class="seq-content"><span class="who">RegisterMoodUseCase</span><span class="what">Crea la entidad <strong>MoodEntry</strong> — el dominio valida el rango 0–3 y el largo de la nota.</span></div></div>
+          <div class="seq-step"><div class="seq-num">3</div><div class="seq-content"><span class="who">SQLiteMoodLogRepository</span><span class="what">Persiste el registro en <span class="num">fisiagent.db</span>.</span></div></div>
+          <div class="seq-step"><div class="seq-num">4</div><div class="seq-content"><span class="who">GetMoodInsightsUseCase</span><span class="what">Calcula tendencia (positivo / neutral / negativo) y genera insights + recomendaciones basados en reglas.</span></div></div>
+          <div class="seq-step"><div class="seq-num">5</div><div class="seq-content"><span class="who">MoodLogPage.jsx</span><span class="what">Pinta el calendario, el gráfico de barras/línea y la tarjeta de insights.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16 — SEPARADOR MÓDULO 3 ============================================ -->
+    <section class="slide">
+      <div class="divider">
+        <div class="mod-index">03</div>
+        <div class="kicker"><span class="dot"></span>Módulo 3</div>
+        <h1 class="title">Planificador Inteligente</h1>
+        <p class="subtitle">Un agente especializado (PlannerAgent) prioriza tareas y detecta sobrecarga usando Gemini.</p>
+        <div class="pills">
+          <span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span>
+          <span class="trend-pill" style="opacity:0.45"><span class="sw early-adopters"></span>RAG</span>
+          <span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span>
+          <span class="trend-pill"><span class="sw late-majority"></span>LLMs</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 17 — M3 TENDENCIAS APLICADAS ======================================= -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 3 · Tendencias aplicadas</div>
+      <h1 class="title">Cómo se implementó cada tendencia</h1>
+      <div class="slide-body" style="justify-content: center; gap: 22px;">
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span><h4>PlannerAgent</h4><span class="status">Implementado</span></div>
+          <p>Agente especializado con 3 capacidades autónomas: <span class="num">suggest_priority</span>, <span class="num">analyze_schedule</span>, <span class="num">suggest_organization</span>. No forma parte del Coordinador de Módulo 1, pero sigue el mismo patrón de agente con instrucción de sistema propia.</p>
+        </div>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw late-majority"></span>LLMs</span><h4>Gemini como motor de razonamiento</h4><span class="status">Implementado</span></div>
+          <p>Analiza contexto de tareas existentes, fecha límite y categoría para sugerir prioridad, y genera recomendaciones de organización en lenguaje natural.</p>
+        </div>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span><h4>10 casos de uso generados con asistencia de IA</h4><span class="status">Implementado</span></div>
+          <p>El algoritmo de <span class="num">urgency_score</span> (prioridad + proximidad de fecha) es lógica de dominio pura, complementaria al agente.</p>
+        </div>
+        <div class="trend-block">
+          <div class="head"><h4>RAG</h4><span class="status" style="color: var(--ink-faint);">No aplica</span></div>
+          <p>El planificador no recupera documentos — su contexto es el propio historial de tareas del usuario, no una base documental.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 18 — M3 MATRIZ ====================================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 3 · Matriz tendencias × requerimientos</div>
+      <h1 class="title">Qué tendencia resuelve qué requerimiento</h1>
+      <div class="slide-body" style="justify-content:center;">
+        <div class="table-wrap">
+          <table class="matrix">
+            <thead>
+              <tr><th>Requerimiento</th><th>Agentic AI</th><th>RAG</th><th>AI-assisted dev</th><th>LLMs</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="req">RF5 — Registro y organización de tareas</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RF5 — Priorización inteligente</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td></tr>
+              <tr><td class="req">RF5 — Prevención de sobrecarga diaria</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td></tr>
+              <tr><td class="req">RF5 — Recomendaciones de organización</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 19 — M3 CONTEXTO + ARQUITECTURA ===================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 3 · Contexto y arquitectura del software</div>
+      <h1 class="title">De la tarea a la sugerencia de prioridad</h1>
+      <div class="slide-body" style="gap: 22px;">
+        <div class="context-row">
+          <div class="ctx-box"><span class="label">Actor</span><span class="name">Estudiante</span><span class="desc">Crea una tarea académica</span></div>
+          <div class="ctx-arrow">→</div>
+          <div class="ctx-box center"><span class="label">Sistema</span><span class="name">FISIAgent · Tasks</span><span class="desc">10 endpoints /tasks/*</span></div>
+          <div class="ctx-arrow">→</div>
+          <div class="ctx-stack">
+            <div class="ctx-box"><span class="label">Externo</span><span class="name">Gemini API</span><span class="desc">Sugerencia de prioridad</span></div>
+            <div class="ctx-box"><span class="label">Externo</span><span class="name">SQLite</span><span class="desc">tablas tasks + reminders</span></div>
+          </div>
+        </div>
+        <div class="arch-lanes" style="flex: 1;">
+          <div class="lane">
+            <div class="lane-title">Dominio</div>
+            <div class="items">
+              <div class="chip"><strong>task_models.py</strong>Task · Reminder · TaskPriority · DailySchedule</div>
+              <div class="chip"><strong>agents/</strong>PlannerAgent</div>
+              <div class="chip"><strong>use_cases/</strong>10 casos de uso</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-title">Puertos</div>
+            <div class="items">
+              <div class="chip"><strong>outbound</strong>TaskRepositoryPort</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="lane-title">Adaptadores</div>
+            <div class="items">
+              <div class="chip"><strong>inbound</strong>task_router.py</div>
+              <div class="chip"><strong>outbound</strong>SQLiteTaskRepository</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 20 — M3 VISTA DE PROCESO ============================================ -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Módulo 3 · Vista de proceso</div>
+      <h1 class="title">Secuencia de creación con sugerencia de IA</h1>
+      <div class="slide-body">
+        <div class="sequence">
+          <div class="seq-step"><div class="seq-num">1</div><div class="seq-content"><span class="who">task_router.py</span><span class="what">Recibe <span class="num">POST /tasks/</span> con <span class="num">auto_suggest_priority: true</span> y <span class="num">priority: null</span>.</span></div></div>
+          <div class="seq-step"><div class="seq-num">2</div><div class="seq-content"><span class="who">CreateTaskUseCase</span><span class="what">Detecta que no hay prioridad explícita y delega en el <strong>PlannerAgent</strong>.</span></div></div>
+          <div class="seq-step"><div class="seq-num">3</div><div class="seq-content"><span class="who">PlannerAgent → Gemini</span><span class="what">Analiza fecha límite, categoría y carga actual del usuario; sugiere prioridad (0–3).</span></div></div>
+          <div class="seq-step"><div class="seq-num">4</div><div class="seq-content"><span class="who">Task (dominio)</span><span class="what">Calcula <span class="num">urgency_score</span> = peso de prioridad (1–4) + proximidad de fecha (1–6).</span></div></div>
+          <div class="seq-step"><div class="seq-num">5</div><div class="seq-content"><span class="who">SQLiteTaskRepository</span><span class="what">Persiste la tarea ya priorizada.</span></div></div>
+          <div class="seq-step"><div class="seq-num">6</div><div class="seq-content"><span class="who">TaskPlannerPage.jsx</span><span class="what">Lista la tarea ordenada por urgencia, junto a estadísticas y sugerencias de organización.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 21 — MATRIZ CONSOLIDADA ============================================= -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Panorama general</div>
+      <h1 class="title">Matriz consolidada — tendencias × módulos</h1>
+      <div class="slide-body" style="justify-content:center;">
+        <div class="table-wrap">
+          <table class="matrix">
+            <thead>
+              <tr><th>Tendencia</th><th>Módulo 1 — Chat</th><th>Módulo 2 — Bienestar</th><th>Módulo 3 — Planificador</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="req"><span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span></td><td class="mark yes">✓ Multi-agente (4)</td><td class="mark no">—</td><td class="mark yes">✓ PlannerAgent</td></tr>
+              <tr><td class="req"><span class="trend-pill"><span class="sw early-adopters"></span>RAG</span></td><td class="mark yes">✓ ChromaDB</td><td class="mark no">—</td><td class="mark no">—</td></tr>
+              <tr><td class="req"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span></td><td class="mark yes">✓ BETO</td><td class="mark yes">✓ Copilot/Claude</td><td class="mark yes">✓ Copilot/Claude</td></tr>
+              <tr><td class="req"><span class="trend-pill"><span class="sw late-majority"></span>LLMs</span></td><td class="mark yes">✓ Gemini</td><td class="mark no">—</td><td class="mark yes">✓ Gemini</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="color: var(--ink-faint); font-size: 12.5px; text-align:center;">
+          4/4 tendencias en Módulo 1 · 1/4 en Módulo 2 (a propósito) · 3/4 en Módulo 3
+        </p>
+      </div>
+    </section>
+
+    <!-- 22 — VISTA DE DESPLIEGUE ============================================ -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Vista de despliegue · Transversal a los 3 módulos</div>
+      <h1 class="title">De un <span class="num">git push</span> a producción</h1>
+      <div class="slide-body" style="justify-content: center;">
+        <div class="deploy">
+          <div class="deploy-box" style="flex: 0 0 160px;"><div class="t">GitHub · main</div><div class="d">git push dispara 2 workflows en paralelo</div></div>
+          <div class="ctx-arrow">→</div>
+          <div class="deploy-col">
+            <div class="deploy-box"><div class="t">sync-to-hf.yml</div><div class="d">Mirror del repo (Git LFS) hacia el Space</div></div>
+            <div class="deploy-arrow-down">↓</div>
+            <div class="deploy-box"><div class="t">Hugging Face Spaces</div><div class="d">Docker · FastAPI + BETO + RAG · puerto 7860</div></div>
+          </div>
+          <div class="deploy-col">
+            <div class="deploy-box"><div class="t">deploy-pages.yml</div><div class="d"><span class="num">npm run build</span> con <span class="num">VITE_API_URL</span></div></div>
+            <div class="deploy-arrow-down">↓</div>
+            <div class="deploy-box"><div class="t">GitHub Pages</div><div class="d">Frontend estático (React + Vite)</div></div>
+          </div>
+        </div>
+        <p style="text-align:center; color: var(--ink-faint); font-size: 12px;">
+          Dos servicios gratuitos, sin tarjeta de crédito, desplegados de forma independiente y reproducible (RNF4).
+        </p>
+      </div>
+    </section>
+
+    <!-- 23 — CONCLUSIONES ==================================================== -->
+    <section class="slide">
+      <div class="kicker"><span class="dot"></span>Conclusiones</div>
+      <h1 class="title">Lo que dejó el uso de las tendencias</h1>
+      <div class="slide-body" style="justify-content: center; gap: 16px;">
+        <ul class="plain">
+          <li><strong>Agentic AI</strong> desacopla responsabilidades igual que un buen diseño de módulos: cada agente (riesgo, RAG, tono, planificación) se puede testear y reemplazar por separado.</li>
+          <li><strong>RAG</strong> es lo que hace confiable a un chatbot en un dominio sensible — ancla las respuestas en la realidad institucional en vez de dejarlas "alucinar".</li>
+          <li><strong>Los LLMs</strong> dan flexibilidad conversacional que ninguna regla fija lograría, pero exigen un plan de resiliencia: BETO tiene fallback a palabras clave si el modelo no carga.</li>
+          <li><strong>AI-assisted development</strong> aceleró el boilerplate hexagonal, pero no reemplazó la revisión humana — así se detectaron errores reales (una ruta mal calculada al modelo BETO, una pantalla de ánimo que nunca llamaba al backend).</li>
+          <li><strong>No todo módulo necesita las cuatro tendencias.</strong> El Dashboard de Bienestar demuestra que aplicar IA generativa "porque sí" habría sido sobre-ingeniería — la arquitectura hexagonal permitió que cada módulo eligiera solo lo que necesitaba.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 24 — CIERRE ========================================================= -->
+    <section class="slide">
+      <div class="closing" style="justify-content: center; align-items: center; text-align: center; width: 100%;">
+        <div class="kicker"><span class="dot"></span>Gracias</div>
+        <h1 class="title">FISIAgent</h1>
+        <p class="lede" style="max-width: 50ch;">Tres funcionalidades end-to-end, una arquitectura hexagonal, cuatro tendencias aplicadas con criterio.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="chrome-top"><div class="bar" id="bar"></div></div>
+  <button class="nav-btn prev" id="prev" aria-label="Diapositiva anterior">‹</button>
+  <button class="nav-btn next" id="next" aria-label="Siguiente diapositiva">›</button>
+  <div class="click-zone left" id="zoneLeft"></div>
+  <div class="click-zone right" id="zoneRight"></div>
+  <div class="counter" id="counter">1 / 25</div>
+  <div class="brandmark">FISIAgent · Tendencias en el Desarrollo de Software</div>
+  <div class="help" id="help">← → para navegar</div>
+</div>
+
+<script>
+  (function () {
+    var slides = document.querySelectorAll('.slide');
+    var total = slides.length;
+    var idx = 0;
+
+    function show(i) {
+      idx = Math.max(0, Math.min(total - 1, i));
+      slides.forEach(function (s, n) { s.classList.toggle('active', n === idx); });
+      document.getElementById('counter').textContent = (idx + 1) + ' / ' + total;
+      document.getElementById('bar').style.width = (((idx + 1) / total) * 100) + '%';
+      if (history.replaceState) history.replaceState(null, '', '#' + (idx + 1));
+    }
+
+    document.getElementById('next').addEventListener('click', function () { show(idx + 1); });
+    document.getElementById('prev').addEventListener('click', function () { show(idx - 1); });
+    document.getElementById('zoneLeft').addEventListener('click', function () { show(idx - 1); });
+    document.getElementById('zoneRight').addEventListener('click', function () { show(idx + 1); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+      else if (e.key === 'Home') { show(0); }
+      else if (e.key === 'End') { show(total - 1); }
+    });
+
+    var help = document.getElementById('help');
+    setTimeout(function () { help.style.transition = 'opacity 0.6s ease'; help.style.opacity = '0'; }, 4000);
+
+    var initial = parseInt((location.hash || '').replace('#', ''), 10) - 1;
+    show(isNaN(initial) ? 0 : initial);
+  })();
+</script>
