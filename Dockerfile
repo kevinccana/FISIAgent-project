@@ -26,4 +26,7 @@ ENV BETO_MODEL_PATH=/app/BETO_model \
 
 EXPOSE 7860
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Render asigna su propio puerto en $PORT; Hugging Face Spaces y Docker local no
+# lo setean, así que cae al 7860 de siempre. Forma "shell" del CMD para que la
+# variable se expanda (la forma "exec" con corchetes no la expande).
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}

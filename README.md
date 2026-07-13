@@ -92,9 +92,9 @@ FISIAgent-Back/
 
 - ✅ Backend dockerizado (`Dockerfile` en la raíz), listo para correr en cualquier plataforma con soporte Docker
 - ✅ Variables de entorno para toda configuración sensible (`GEMINI_API_KEY`, `FRONTEND_URL`, `BETO_MODEL_PATH`, `VITE_API_URL`) — sin secrets en código
-- ✅ CI/CD con GitHub Actions: push a `main` despliega backend y frontend automáticamente
+- ✅ CI/CD: Render redespliega el backend automáticamente en cada push; GitHub Actions despliega el frontend
 - ✅ Frontend estático desplegado en GitHub Pages
-- ✅ Backend (FastAPI + BETO + RAG) desplegado como contenedor Docker en Hugging Face Spaces
+- ✅ Backend (FastAPI + BETO + RAG) desplegado como contenedor Docker en Render
 
 Ver la sección [Despliegue en la nube](#despliegue-en-la-nube) para la arquitectura completa y los pasos de configuración.
 
@@ -125,9 +125,9 @@ Ver la sección [Despliegue en la nube](#despliegue-en-la-nube) para la arquitec
 | HTTP cliente | Axios |
 | Validación de datos | Pydantic v2 |
 | Contenedores | Docker |
-| Hosting backend | Hugging Face Spaces (SDK Docker) |
+| Hosting backend | Render (Web Service, Docker) |
 | Hosting frontend | GitHub Pages |
-| CI/CD | GitHub Actions |
+| CI/CD | Render (auto-deploy nativo) + GitHub Actions (frontend) |
 
 ---
 
@@ -420,33 +420,33 @@ La aplicación estará disponible en `http://localhost:5173`.
 
 ## Despliegue en la nube
 
-Backend y frontend se despliegan por separado y de forma independiente, cada uno disparado por un workflow de GitHub Actions al hacer push a `main`:
+Backend y frontend se despliegan por separado y de forma independiente:
 
 ```
 git push a main
    │
-   ├─ .github/workflows/sync-to-hf.yml  ──▶  Hugging Face Spaces (SDK Docker)
-   │    (mirror del repo + Dockerfile raíz)      → backend FastAPI + BETO + RAG
-   │                                              → escucha en el puerto 7860
+   ├─ Render (integración nativa    ──▶  Render Web Service (Docker)
+   │  con GitHub, sin workflow)          → backend FastAPI + BETO + RAG
+   │                                     → escucha en $PORT (o 7860 local)
    │
    └─ .github/workflows/deploy-pages.yml ──▶  GitHub Pages
-        (npm run build con VITE_API_URL)          → frontend estático (React/Vite)
+        (npm run build con VITE_API_URL)      → frontend estático (React/Vite)
 ```
 
-### Por qué Hugging Face Spaces para el backend
+### Por qué Render para el backend
 
-El backend carga `torch` + `transformers` + `sentence-transformers` + el modelo BETO (~420 MB) en memoria — eso no entra cómodo en el free tier de la mayoría de plataformas (ej. Render free da 512 MB de RAM). El tier gratuito de Spaces (Docker, CPU básico) da bastante más margen y no pide tarjeta de crédito.
+El proyecto primero intentó Hugging Face Spaces (más RAM gratis, 16GB), pero el free tier de Spaces terminó devolviendo `Quota exceeded... limit=0` en dos cuentas distintas sin ninguna verificación resoluble — se abandonó esa ruta. Render sí asigna cómputo gratis sin ese bloqueo, con la contrapartida de menos RAM (512 MB) para cargar `torch` + `transformers` + BETO.
 
 **Limitaciones a tener en cuenta:**
-- El disco del Space es efímero: `fisiagent.db` (mood logs + tasks) y `chroma_db/` se reinician en cada rebuild, salvo que actives el add-on de pago de *Persistent Storage*.
-- El Space "duerme" tras un rato de inactividad y tarda unos segundos en despertar (cold start) en la primera consulta.
-- Si el modelo BETO no llegara a cargar por algún motivo, el sistema ya tiene un fallback automático a detección por palabras clave (no se cae, degrada).
+- El disco es efímero: `fisiagent.db` (mood logs + tasks) y `chroma_db/` se reinician en cada redeploy, salvo que agregues un [Persistent Disk](https://render.com/docs/disks) de pago.
+- El servicio se duerme tras ~15 min de inactividad y tarda 30-60s en despertar (cold start) en la primera consulta.
+- Si `torch`/BETO no entran en los 512 MB del free tier, el proceso puede reiniciarse en bucle (OOM) en vez de degradar con gracia — a diferencia de cuando el modelo simplemente no se encuentra (ahí sí hay fallback a palabras clave, porque es una excepción de Python, no un OOM-kill del SO).
 
 ### Guía completa paso a paso
 
-La configuración inicial (crear el Space, generar el token de Hugging Face, secrets/variables en GitHub, habilitar Pages), la verificación de que todo quedó corriendo y una sección de troubleshooting con los errores más comunes (CORS, Git LFS, pantalla en blanco, etc.) están documentados en detalle en **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+La configuración inicial (crear el Web Service en Render, variables de entorno, `VITE_API_URL` en GitHub, habilitar Pages), la verificación de que todo quedó corriendo y una sección de troubleshooting con los errores más comunes (CORS, memoria insuficiente, pantalla en blanco, etc.) están documentados en detalle en **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
-Los workflows viven en [.github/workflows/sync-to-hf.yml](.github/workflows/sync-to-hf.yml) y [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml).
+El workflow del frontend vive en [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml).
 
 ---
 
@@ -851,7 +851,7 @@ La aplicación está diseñada para el contexto peruano. En caso de crisis se mu
 | Análisis de agenda (backend) | ✅ Sugerencias inteligentes con Gemini |
 | Interfaz del Planificador (frontend) | ✅ `TaskPlannerPage.jsx` conectado a los 10 endpoints de `/tasks` |
 | Recursos por distrito | ✅ Funcional (SJL, Comas, Lima Centro) |
-| Docker + despliegue en nube | ✅ Backend en Hugging Face Spaces, frontend en GitHub Pages, CI con GitHub Actions |
+| Docker + despliegue en nube | ✅ Backend en Render, frontend en GitHub Pages, CI/CD nativo de Render + GitHub Actions |
 | Autenticación de usuarios | ⏳ Pendiente |
 
 ### Funcionalidades Implementadas (3/3 requeridas) ✅
