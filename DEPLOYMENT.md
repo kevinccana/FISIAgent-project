@@ -109,6 +109,20 @@ Guarda los cambios — Render redespliega automáticamente el servicio cada vez 
 
 > **Con `ENABLE_RAG=false`:** el chat sigue funcionando completo (BETO clasificando riesgo + Gemini generando respuestas empáticas + protocolo de crisis), pero sin anclar las respuestas en los documentos de la FISI-UNSM — esa parte de la Funcionalidad 1 (RAG, Early Adopters) queda solo demostrada en el demo local, no en la versión pública.
 
+### Sembrar datos de ejemplo (opcional, para que la demo no se vea vacía)
+
+El free tier de Render no incluye una Shell dentro del contenedor, así que `seed_data.py` (que escribe directo al archivo SQLite) no se puede correr ahí. En su lugar, hay un endpoint HTTP que hace lo mismo:
+
+1. Agrega la variable `SEED_TOKEN` en Environment (cualquier string que solo tú conozcas, ej. un password largo generado al azar). Sin esta variable, el endpoint responde 404 — no queda expuesto por accidente.
+2. Con el servicio ya redesplegado, corre:
+   ```bash
+   curl -X POST https://tu-servicio.onrender.com/dev/seed-demo-data \
+     -H "X-Seed-Token: el-mismo-valor-que-pusiste-en-SEED_TOKEN"
+   ```
+3. Respuesta esperada: `{"message": "Datos de ejemplo sembrados correctamente", "mood_entries": 30, "tasks": 17, ...}`.
+
+Es idempotente — puedes correrlo varias veces, cada vez borra y vuelve a insertar los datos de `estudiante_demo` (el `USER_ID` que usa el frontend). Como el disco de Render es efímero, tendrás que volver a correrlo después de cada redeploy si quieres que la demo siga poblada.
+
 ---
 
 ## 5. Paso 3 — Configurar `VITE_API_URL` en GitHub

@@ -60,6 +60,7 @@ from app.core.agents.planner_agent import PlannerAgent
 from app.adapters.inbound.api import chat_router
 from app.adapters.inbound.api import mood_router
 from app.adapters.inbound.api import task_router
+from app.adapters.inbound.api import dev_router
 
 # ── Rutas legacy (compatibilidad) ──────────────────────────────────────────────
 from app.routes import chat, health, gemini
@@ -288,6 +289,7 @@ app.add_middleware(
 app.include_router(chat_router.router, tags=["Chat (Hexagonal)"])
 app.include_router(mood_router.router, tags=["Dashboard de Bienestar"])
 app.include_router(task_router.router, tags=["Planificador Inteligente"])
+app.include_router(dev_router.router, tags=["Utilidades de desarrollo"])
 
 # Routers legacy (compatibilidad con código existente)
 app.include_router(chat.router, tags=["Legacy"])
