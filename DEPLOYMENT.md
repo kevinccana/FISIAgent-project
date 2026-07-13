@@ -101,10 +101,13 @@ Dentro de tu Web Service → pestaña **Environment** → **Add Environment Vari
 |-----|-------|
 | `GEMINI_API_KEY` | Tu API key de Gemini |
 | `FRONTEND_URL` | `https://tu-usuario.github.io` (sin la ruta del repo, sin `/` final — ver por qué en Troubleshooting) |
+| `ENABLE_RAG` | `false` — **necesario en el free tier** (512MB RAM no alcanza para BETO + el modelo de embeddings de RAG a la vez, ver sección 10). Sin esta variable (o en local), RAG queda activo por defecto. |
 
 Guarda los cambios — Render redespliega automáticamente el servicio cada vez que agregas o cambias una variable de entorno.
 
 > `BETO_MODEL_PATH` no hace falta configurarla aquí — el `Dockerfile` ya la fija en `/app/BETO_model` (donde clona el modelo durante el build).
+
+> **Con `ENABLE_RAG=false`:** el chat sigue funcionando completo (BETO clasificando riesgo + Gemini generando respuestas empáticas + protocolo de crisis), pero sin anclar las respuestas en los documentos de la FISI-UNSM — esa parte de la Funcionalidad 1 (RAG, Early Adopters) queda solo demostrada en el demo local, no en la versión pública.
 
 ---
 
@@ -189,7 +192,7 @@ docker run -p 7860:7860 --env-file FISIAgent-Back/.env \
 
 | Recurso | Límite gratuito | Síntoma si se excede | Solución |
 |---|---|---|---|
-| RAM (Free instance) | 512 MB | El servicio se reinicia en bucle sin llegar a "Startup complete" en los logs (OOM-kill del proceso, no un fallback controlado) | Plan de pago con más RAM (Starter, 512MB→ más), o reducir el footprint del modelo (cuantización, modelo más chico) |
+| RAM (Free instance) | 512 MB | `==> Out of memory (used over 512Mi)` en los logs, el servicio se reinicia en bucle sin llegar a "Startup complete" — truena cargando el modelo de embeddings de RAG, antes incluso de llegar a BETO | Ya resuelto con `ENABLE_RAG=false` (ver sección 4) — desactiva el modelo de embeddings de RAG, deja el chat funcionando con BETO + Gemini. Si aun así no alcanza, un plan de pago con más RAM |
 | CPU (Free instance) | 0.1 vCPU compartida | Respuestas lentas, timeouts en la primera clasificación de BETO | Aceptable para demo/curso; plan de pago si se vuelve un problema real |
 | Sleep por inactividad | El servicio se duerme tras ~15 min sin tráfico | La primera petición después de dormir tarda 30-60s (cold start) | Aceptable para un proyecto académico; un plan pago evita el sleep |
 | Disco | Efímero (se borra en cada deploy) | `fisiagent.db` y `chroma_db/` vuelven a estar vacíos tras cada redeploy | Agregar un [Persistent Disk](https://render.com/docs/disks) de pago, o migrar a una base de datos externa gestionada |
@@ -203,9 +206,10 @@ docker run -p 7860:7860 --env-file FISIAgent-Back/.env \
 - Causa típica: se está instalando la build de PyTorch con CUDA (varios GB) en vez de la CPU-only.
 - Verifica que el `Dockerfile` tenga la línea `--index-url https://download.pytorch.org/whl/cpu` antes de instalar `torch`.
 
-### El servicio se reinicia solo en bucle, nunca llega a "Live" / a los logs de `[Startup]`
-- Casi siempre es **memoria insuficiente** (ver sección 10) — cargar `torch` + `transformers` + BETO en 512 MB es ajustado.
-- Si el problema es justo este, considera: (a) un plan de Render con más RAM, o (b) verificar si de verdad necesitas el modelo BETO cargado siempre en memoria, o si se puede cargar bajo demanda / perezosamente.
+### El servicio se reinicia solo en bucle, nunca llega a "Live" / a los logs de `[Startup]`, o los logs dicen `Out of memory (used over 512Mi)`
+- Causa confirmada: cargar `torch` + `transformers` + BETO **y** el modelo de embeddings de RAG (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`) a la vez no entra en 512 MB — el crash pasa justo al construir `RAGAdapter`, antes de llegar a cargar BETO.
+- Fix: agrega `ENABLE_RAG=false` en Environment (sección 4). El chat sigue funcionando (BETO + Gemini + protocolo de crisis), solo sin RAG.
+- Si necesitas RAG también en producción, la alternativa es un plan de Render con más RAM (Starter o superior).
 
 ### En los logs aparece `[BETO] Carpeta del modelo no encontrada`
 - El modelo se descarga durante el **build** del `Dockerfile` (`RUN git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/BETO_model`), no viaja versionado en este repo.

@@ -98,10 +98,14 @@ async def lifespan(app: FastAPI):
     gemini_adapter = GeminiAdapter(api_key=api_key or "")
     
     # 1.3 RAG Adapter (Early Adopters - InfoQ 2025)
-    logger.info("[Startup] Inicializando RAG con ChromaDB...")
+    # ENABLE_RAG=false en entornos con RAM limitada (ej. Render free tier, 512MB no
+    # alcanza para BETO + el modelo de embeddings de RAG a la vez). Por defecto activo.
+    rag_enabled = os.getenv("ENABLE_RAG", "true").strip().lower() != "false"
+    logger.info(f"[Startup] Inicializando RAG con ChromaDB... (enabled={rag_enabled})")
     rag_adapter = RAGAdapter(
         docs_path="app/docs/fisi",
-        persist_directory="chroma_db"
+        persist_directory="chroma_db",
+        enabled=rag_enabled
     )
     
     # 1.4 Video Recommender

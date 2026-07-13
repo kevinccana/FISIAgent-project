@@ -410,6 +410,7 @@ La aplicación estará disponible en `http://localhost:5173`.
 | `GEMINI_API_KEY` | API key de Google Gemini | Sí | Backend |
 | `FRONTEND_URL` | Orígenes adicionales permitidos por CORS (ej. la URL de GitHub Pages), separados por coma | No — sin ella solo funciona con `localhost:5173` | Backend |
 | `BETO_MODEL_PATH` | Ruta absoluta a `BETO_model/` dentro del contenedor | No — por defecto busca `BETO_model/` en la raíz del repo | Backend |
+| `ENABLE_RAG` | Si es `false`, desactiva el modelo de embeddings de RAG (no se carga en memoria) | No — por defecto `true`. Ponla en `false` en entornos con RAM limitada (ej. Render free tier, 512MB) | Backend |
 | `VITE_API_URL` | URL pública del backend, usada al compilar el frontend | No — por defecto `http://localhost:8000` | Frontend (build) |
 
 > **Seguridad:** Nunca pongas la API key directamente en el código (`os.getenv("AIzaSy...")`).
