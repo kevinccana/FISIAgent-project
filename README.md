@@ -18,7 +18,7 @@ Este proyecto aplica cuatro tendencias del **InfoQ Software Architecture and Des
 
 | Etapa | Tendencia | Aplicación en FISIAgent |
 |-------|-----------|------------------------|
-| 🟢 **Late Majority** | Large Language Models (LLMs) | Gemini 2.5 Flash genera las respuestas empáticas del chatbot |
+| 🟢 **Late Majority** | Large Language Models (LLMs) | Gemini 3.1 Flash Lite genera las respuestas empáticas del chatbot |
 | 🟡 **Early Majority** | AI-assisted development | Uso de GitHub Copilot y BETO como modelo especializado en lugar de uno genérico; prompts de sistema como guías arquitectónicas |
 | 🟠 **Early Adopters** | Retrieval-Augmented Generation (RAG) | El chatbot consulta documentos reales de la FISI-UNSM (reglamento, sílabos, calendario) antes de responder |
 | 🔴 **Innovators** | Agentic AI | Flujo multi-agente: AgenteEvaluadorRiesgo (BETO) + AgenteRAG + AgenteRespondedor (Gemini) + AgenteCrisis |
@@ -102,7 +102,7 @@ Ver la sección [Despliegue en la nube](#despliegue-en-la-nube) para la arquitec
 
 ## Características principales
 
-- **Chat con IA** — Conversación empática en tiempo real usando Gemini 2.5 Flash con rol de apoyo psicológico orientado al estudiante universitario.
+- **Chat con IA** — Conversación empática en tiempo real usando Gemini 3.1 Flash Lite con rol de apoyo psicológico orientado al estudiante universitario.
 - **Detección de riesgo psicosocial** — Modelo BETO con fine-tuning clasifica cada mensaje en tres niveles: Control, Moderado y Crítico.
 - **RAG académico FISI-UNSM** — Responde preguntas sobre reglamento, horarios, sílabos y recursos de bienestar con información real de la universidad.
 - **Pipeline multi-agente** — Agentes especializados deciden autónomamente el flujo: evaluar riesgo → buscar en docs → responder o escalar a crisis.
@@ -118,7 +118,7 @@ Ver la sección [Despliegue en la nube](#despliegue-en-la-nube) para la arquitec
 |------|-----------|
 | Frontend | React 19 + Vite |
 | Backend | FastAPI (Python) + Uvicorn |
-| IA Conversacional | Google Gemini 2.5 Flash |
+| IA Conversacional | Google Gemini 3.1 Flash Lite |
 | Clasificación de riesgo | BETO (BERT en español) con fine-tuning |
 | RAG — Base vectorial | ChromaDB + sentence-transformers |
 | RAG — Orquestación | LangChain |
@@ -379,7 +379,7 @@ Al arrancar verás los siguientes logs indicando la correcta inicialización:
 [Startup]    🔴 Innovators: Agentic AI (Multi-Agent)
 [Startup]    🟠 Early Adopters: RAG (ChromaDB + LangChain)
 [Startup]    🟡 Early Majority: AI-assisted development
-[Startup]    🟢 Late Majority: LLMs (Gemini 2.5 Flash)
+[Startup]    🟢 Late Majority: LLMs (Gemini 3.1 Flash Lite)
 ```
 
 **Verificar que RAG funciona:**

@@ -1,7 +1,7 @@
 """
 GeminiAdapter - Outbound Adapter (Arquitectura Hexagonal)
 
-Implementa el port LLMServicePort usando Google Gemini 2.5 Flash.
+Implementa el port LLMServicePort usando Google Gemini.
 """
 import os
 import logging
@@ -11,6 +11,12 @@ from app.core.domain.exceptions import LLMServiceError
 from app.ports.outbound.llm_service import LLMServicePort
 
 logger = logging.getLogger(__name__)
+
+# gemini-2.5-flash dejó de estar disponible para cuentas nuevas de Gemini API
+# (ver DEPLOYMENT.md). gemini-3.1-flash-lite requiere google-genai >= 2.11.0 --
+# la 2.6.0 falla con 401 UNAUTHENTICATED contra este modelo aunque la key sí
+# tenga acceso (confirmado comparando el SDK contra una llamada REST cruda).
+MODEL_NAME = "gemini-3.1-flash-lite"
 
 
 class GeminiAdapter(LLMServicePort):
@@ -71,7 +77,7 @@ class GeminiAdapter(LLMServicePort):
             )
             
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=MODEL_NAME,
                 contents=contents,
                 config=config,
             )
@@ -107,7 +113,7 @@ class GeminiAdapter(LLMServicePort):
         try:
             client = self._get_client()
             client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=MODEL_NAME,
                 contents="di 'ok' y nada más",
             )
             return {"ok": True, "detail": None}

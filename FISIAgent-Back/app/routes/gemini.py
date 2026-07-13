@@ -73,7 +73,7 @@ def seleccionar_video_con_gemini(texto: str, client) -> dict:
 
     try:
         respuesta = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(temperature=0.1),
         )
@@ -140,7 +140,7 @@ async def chat_endpoint(request: ChatRequest):
         )
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             contents=contents,
             config=config,
         )

@@ -259,7 +259,7 @@ async def lifespan(app: FastAPI):
     logger.info("[Startup]    🔴 Innovators: Agentic AI (Multi-Agent + Planner)")
     logger.info("[Startup]    🟠 Early Adopters: RAG (ChromaDB + LangChain)")
     logger.info("[Startup]    🟡 Early Majority: AI-assisted development")
-    logger.info("[Startup]    🟢 Late Majority: LLMs (Gemini 2.5 Flash)")
+    logger.info("[Startup]    🟢 Late Majority: LLMs (Gemini 3.1 Flash Lite)")
     logger.info("[Startup] 📊 Funcionalidades:")
     logger.info("[Startup]    ✅ Funcionalidad 1: Chat de Apoyo Emocional (RAG + Agentes)")
     logger.info("[Startup]    ✅ Funcionalidad 2: Dashboard de Bienestar (SQLite)")
@@ -317,7 +317,7 @@ def root():
             "innovators": "Agentic AI (Multi-Agent System + Planner Agent)",
             "early_adopters": "RAG (ChromaDB + LangChain)",
             "early_majority": "AI-assisted development (GitHub Copilot)",
-            "late_majority": "LLMs (Gemini 2.5 Flash)"
+            "late_majority": "LLMs (Gemini 3.1 Flash Lite)"
         },
         "status": "running"
     }
