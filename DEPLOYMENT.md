@@ -217,15 +217,17 @@ Si prefieres dispararlos manualmente sin hacer un commit nuevo:
 
 ### `sync-to-hf.yml`
 
-El modelo BETO **ya no viaja en este repo**: el `Dockerfile` lo clona directamente desde su propio repo de modelo en el Hub (`huggingface.co/kevinccana/FisiAgent-BETO`) durante el build del contenedor. Esto simplifica el workflow — ya no hace falta armar un subconjunto mínimo del repo, se puede mandar un mirror completo:
+El modelo BETO **ya no viaja en este repo**: el `Dockerfile` lo clona directamente desde su propio repo de modelo en el Hub (`huggingface.co/kevinccana/FisiAgent-BETO`) durante el build del contenedor.
 
-1. Hace `checkout` del repo completo, **incluyendo Git LFS** (`lfs: true`) — necesario para que los binarios trackeados con LFS a nivel raíz (`*.mp4`, `*.png`, `*.bin` — ver `.gitattributes`, ej. el video de `CrisisOverlay`) se traigan como archivos reales, no como punteros de texto.
-2. Antepone temporalmente un bloque YAML (`sdk: docker`, `app_port: 7860`, etc.) al inicio de `README.md` **solo en el checkout local del runner** — Hugging Face necesita ese bloque para saber qué SDK usar y en qué puerto escuchar. Este cambio **no se sube a GitHub**, solo viaja hacia Hugging Face.
-3. Hace un commit local (efímero, vive solo en el runner) con ese README modificado.
-4. Hace `git lfs fetch --all` y agrega el repositorio del Space como remoto Git (`https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE`), luego `git push --force` — el `--force` es necesario porque el Space empieza con su propio historial de Git (el de la plantilla "Blank Docker") y no comparte ancestros con tu repo.
+El workflow **no manda un mirror del historial de Git** — arma un repositorio nuevo, de un solo commit, con solo lo que el `Dockerfile` necesita:
+
+1. Hace `checkout` normal del repo (sin `lfs: true` ni historial completo — ya no hacen falta, ver la nota de abajo).
+2. Copia a `/tmp/hf-space` únicamente `Dockerfile`, `.dockerignore` y `FISIAgent-Back/`, y genera ahí un `README.md` propio con el bloque YAML que Hugging Face necesita (`sdk: docker`, `app_port: 7860`, etc.) — este README es exclusivo del Space, nunca se sube a GitHub.
+3. Dentro de `/tmp/hf-space` hace `git init` + un único commit — **sin ningún historial previo**.
+4. Agrega el repositorio del Space como remoto Git (`https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE`) y hace `git push --force hf HEAD:main`.
 5. Al recibir el push, Hugging Face detecta el `Dockerfile` en la raíz y reconstruye automáticamente el contenedor — el paso `RUN git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/BETO_model` del `Dockerfile` descarga el modelo en ese momento.
 
-> **Importante:** cualquier archivo binario grande que agregues al repo (frontend o backend) debe estar cubierto por un patrón en `.gitattributes` (`filter=lfs`) **y no debe estar en `.gitignore`** — ambas cosas a la vez impiden que `git add` lo trackee. Si un push a Hugging Face falla con *"Your push was rejected because it contains binary files"*, ese es el síntoma (ver Troubleshooting).
+> **Por qué un commit nuevo y no un mirror del historial:** el repo de GitHub arrastra un blob binario viejo (un video del frontend, subido en el primerísimo commit del proyecto, antes de que existiera Git LFS en este repo) en su historia. Un mirror completo (`checkout` con `fetch-depth: 0` + `git push --force hf HEAD:main` sobre ese checkout) empuja **todo el historial alcanzable**, no solo el snapshot actual — así que ese blob viejo viaja igual y Hugging Face lo rechaza, sin importar que el archivo esté correctamente trackeado con LFS en el commit más reciente. Armando un historial nuevo en cada sync, ese blob nunca se toca. Si en el futuro quieres limpiar el historial de GitHub de raíz (con `git filter-repo` o BFG), es un cambio aparte y más invasivo (reescribe el historial compartido) — no es necesario para que el despliegue funcione.
 
 ### `deploy-pages.yml`
 
@@ -295,8 +297,10 @@ Si cambias `VITE_API_URL` o `HF_SPACE` en GitHub (Settings → Secrets and varia
   - Verifica que `BETO_MODEL_PATH=/app/BETO_model` (seteado en el `Dockerfile`) coincida con el destino del `git clone`.
 
 ### `remote: Your push was rejected because it contains binary files` (menciona un `.mp4`, `.png` u otro binario)
-- Causa: ese archivo no está cubierto por un patrón `filter=lfs` en algún `.gitattributes` del repo, **o** está listado en `.gitignore` (lo que bloquea que `git add` lo trackee, incluso si `.gitattributes` sí lo cubre — ambos archivos actúan en conjunto).
-- Fix: agrega el patrón correspondiente a `.gitattributes` (raíz del repo, ej. `*.mp4 filter=lfs diff=lfs merge=lfs -text`) y confirma que **no** haya una entrada que lo ignore en `.gitignore`. Luego vuelve a agregar el archivo (`git rm --cached <archivo>` seguido de `git add <archivo>` si ya estaba trackeado sin LFS) para que el filtro LFS lo re-procese.
+- **Causa #1 (la más común aquí):** el workflow está empujando el **historial completo** de Git (`fetch-depth: 0` + `git push --force hf HEAD:main` sobre el checkout normal) en vez de armar el commit único en `/tmp/hf-space`. Aunque el archivo esté perfectamente trackeado con LFS en el commit más reciente, un mirror completo también empuja commits viejos — y este repo tiene un blob binario sin LFS en su primerísimo commit (`FISIAgent-project/FISIAgent-Front/public/videos/Respiracion_Guiada.mp4`, de antes de que existiera Git LFS aquí). Verifica con `git log --oneline -- "ruta/del/archivo"` si el archivo aparece en commits muy antiguos con una ruta distinta a la actual — si sí, es esto.
+  - Fix: confirma que tu `sync-to-hf.yml` sea la versión que arma `/tmp/hf-space` con un solo commit (ver sección 10) — no una que haga `checkout` con `fetch-depth: 0` y luego `git push --force hf HEAD:main` directo.
+- **Causa #2:** el archivo no está cubierto por un patrón `filter=lfs` en `.gitattributes`, o está listado en `.gitignore` (lo que bloquea que `git add` lo trackee, incluso si `.gitattributes` sí lo cubre).
+  - Fix: agrega el patrón a `.gitattributes` (raíz del repo, ej. `*.mp4 filter=lfs diff=lfs merge=lfs -text`), confirma que **no** esté en `.gitignore`, y vuelve a agregarlo (`git rm --cached <archivo>` + `git add <archivo>` si ya estaba trackeado sin LFS).
 
 ### Error de CORS en la consola del navegador (`blocked by CORS policy`)
 - `FRONTEND_URL` no está configurado en el backend, o no coincide exactamente con la URL de GitHub Pages (protocolo `https://`, sin `/` final).

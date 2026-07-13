@@ -9,15 +9,30 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (con Git LFS resuelto)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          lfs: true
-          fetch-depth: 0
 
-      - name: Anteponer metadata de Hugging Face Space al README (solo para este push, no se sube a GitHub)
+      # Se arma un repo Git nuevo, de UN SOLO COMMIT (sin historial), con solo lo
+      # que el Dockerfile necesita: Dockerfile, .dockerignore y FISIAgent-Back/.
+      # BETO_model/ ya no hace falta copiarlo -- el Dockerfile lo clona desde
+      # huggingface.co/kevinccana/FisiAgent-BETO durante el build.
+      #
+      # Por qué UN SOLO COMMIT y no un mirror del historial completo: el repo de
+      # GitHub arrastra un blob binario viejo (un video del frontend, subido en el
+      # primer commit del proyecto antes de que existiera Git LFS) en su historia.
+      # Un mirror completo (git push --force hf HEAD:main sobre el checkout normal)
+      # empuja TODO el historial alcanzable, no solo el snapshot actual, así que ese
+      # blob viejo viaja igual y Hugging Face lo rechaza -- sin importar que el
+      # archivo esté correctamente trackeado con LFS en el commit más reciente.
+      # Empezando un historial nuevo en cada sync, ese blob nunca se toca.
+      - name: Preparar contenido mínimo del Space
         run: |
-          cat > /tmp/hf_frontmatter.md << 'EOF'
+          rm -rf /tmp/hf-space
+          mkdir -p /tmp/hf-space
+          cp Dockerfile .dockerignore /tmp/hf-space/
+          cp -r FISIAgent-Back /tmp/hf-space/FISIAgent-Back
+
+          cat > /tmp/hf-space/README.md << 'EOF'
           ---
           title: FISIAgent Backend
           emoji: 🧠
@@ -28,22 +43,21 @@ jobs:
           pinned: false
           ---
 
+          Backend de FISIAgent (FastAPI + BETO + RAG). Repositorio fuente y documentación
+          completa: https://github.com/${{ github.repository }}
           EOF
-          cat /tmp/hf_frontmatter.md README.md > /tmp/README_merged.md
-          mv /tmp/README_merged.md README.md
 
-      - name: Commit local (no se empuja a GitHub, solo se usa para el mirror a HF)
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git commit -m "chore: metadata de Hugging Face Space (solo CI)"
-
-      - name: Push al Space de Hugging Face
+      - name: Commit y push al Space de Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ vars.HF_SPACE }}
         run: |
-          git lfs fetch --all
+          cd /tmp/hf-space
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Sync desde ${{ github.repository }}@${{ github.sha }}"
+
           git remote add hf "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}"
           git push --force hf HEAD:main
