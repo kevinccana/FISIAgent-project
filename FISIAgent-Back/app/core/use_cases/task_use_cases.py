@@ -405,6 +405,7 @@ class GetTaskOrganizationSuggestionsUseCase:
                     "Divide tareas grandes en pasos más pequeños.",
                     "Establece horarios específicos para trabajar en cada tarea."
                 ],
+                "resources": ["técnica Pomodoro", "método Eisenhower para priorizar"],
                 "critical_tasks_count": len(overdue),
                 "overdue_count": len(overdue)
             }

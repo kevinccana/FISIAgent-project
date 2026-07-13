@@ -267,18 +267,35 @@ TAREAS CRÍTICAS (vencidas o urgentes):
         prompt += """
 
 TAREA:
-Analiza la situación general del estudiante y proporciona:
-1. Un diagnóstico de su gestión de tareas (1-2 oraciones)
-2. 3-5 recomendaciones específicas para mejorar su organización
-3. Consejos de priorización y bienestar
+Analiza la situación general del estudiante y proporciona una respuesta elaborada
+y útil, no genérica ni superficial:
 
-FORMATO DE RESPUESTA:
-DIAGNOSTICO: [tu análisis]
-RECOMENDACION_1: [primera recomendación]
-RECOMENDACION_2: [segunda recomendación]
-RECOMENDACION_3: [tercera recomendación]
-RECOMENDACION_4: [cuarta recomendación opcional]
+1. Un diagnóstico desarrollado de su gestión de tareas (3-4 oraciones): identifica
+   patrones concretos (ej. acumulación en una categoría, procrastinación en tareas
+   largas, buen manejo de lo urgente pero descuido de lo importante-no-urgente,
+   etc.), no solo repitas los números.
+2. 4-6 recomendaciones específicas y desarrolladas (cada una 2-3 oraciones): explica
+   QUÉ hacer, POR QUÉ ayuda en su caso concreto, y CÓMO aplicarlo hoy mismo. Evita
+   consejos genéricos tipo "organízate mejor" -- sé concreto y accionable.
+3. 2-4 recursos o técnicas reales y conocidas que el estudiante pueda investigar por
+   su cuenta en internet (nombres de metodologías, técnicas o tipos de herramientas
+   que existen de verdad, ej. "técnica Pomodoro", "método Eisenhower para priorizar",
+   "Getting Things Done (GTD)", "apps de bloqueo de distracciones tipo Forest").
+   NO inventes URLs ni enlaces específicos -- da el nombre/término exacto para que
+   el estudiante lo busque él mismo.
+
+FORMATO DE RESPUESTA (sigue este formato exacto):
+DIAGNOSTICO: [tu análisis desarrollado]
+RECOMENDACION_1: [primera recomendación elaborada]
+RECOMENDACION_2: [segunda recomendación elaborada]
+RECOMENDACION_3: [tercera recomendación elaborada]
+RECOMENDACION_4: [cuarta recomendación elaborada]
 RECOMENDACION_5: [quinta recomendación opcional]
+RECOMENDACION_6: [sexta recomendación opcional]
+RECURSO_1: [nombre de técnica/metodología/tipo de app para buscar]
+RECURSO_2: [nombre de técnica/metodología/tipo de app para buscar]
+RECURSO_3: [nombre de técnica/metodología/tipo de app para buscar opcional]
+RECURSO_4: [nombre de técnica/metodología/tipo de app para buscar opcional]
 """
 
         response = await self._call_llm(prompt)
@@ -287,6 +304,7 @@ RECOMENDACION_5: [quinta recomendación opcional]
         lines = response.strip().split('\n')
         diagnosis = ""
         recommendations = []
+        resources = []
 
         for line in lines:
             if line.startswith("DIAGNOSTICO:"):
@@ -295,10 +313,15 @@ RECOMENDACION_5: [quinta recomendación opcional]
                 rec = line.split(":", 1)[1].strip() if ":" in line else line
                 if rec:
                     recommendations.append(rec)
+            elif line.startswith("RECURSO_"):
+                resource = line.split(":", 1)[1].strip() if ":" in line else line
+                if resource:
+                    resources.append(resource)
 
         result = {
             "diagnosis": diagnosis or "Necesitas mejorar tu organización de tareas.",
             "recommendations": recommendations or ["Prioriza las tareas vencidas primero."],
+            "resources": resources,
             "critical_tasks_count": len(critical_tasks),
             "overdue_count": len(overdue)
         }

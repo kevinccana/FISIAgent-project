@@ -100,6 +100,7 @@ class OrganizationSuggestionsDTO(BaseModel):
     """DTO de respuesta para sugerencias de organización."""
     diagnosis: str
     recommendations: List[str]
+    resources: List[str] = []
     critical_tasks_count: int
     overdue_count: int
 
@@ -298,6 +299,7 @@ async def get_organization_suggestions(user_id: str):
         return OrganizationSuggestionsDTO(
             diagnosis=suggestions["diagnosis"],
             recommendations=suggestions["recommendations"],
+            resources=suggestions.get("resources", []),
             critical_tasks_count=suggestions["critical_tasks_count"],
             overdue_count=suggestions["overdue_count"]
         )

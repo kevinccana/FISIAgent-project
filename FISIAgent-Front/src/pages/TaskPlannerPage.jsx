@@ -324,6 +324,24 @@ export default function TaskPlannerPage() {
                     <li key={i} style={s.recItem}>{r}</li>
                   ))}
                 </ul>
+                {suggestions.resources && suggestions.resources.length > 0 && (
+                  <>
+                    <p style={s.resourcesTitle}>Para investigar por tu cuenta:</p>
+                    <div style={s.resourceChips}>
+                      {suggestions.resources.map((res, i) => (
+                        <a
+                          key={i}
+                          style={s.resourceChip}
+                          href={`https://www.google.com/search?q=${encodeURIComponent(res)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          🔎 {res}
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -594,5 +612,27 @@ const s = {
     fontSize: 12,
     color: "#c0c0c0",
     marginBottom: 6,
+  },
+  resourcesTitle: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#e0e0e0",
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  resourceChips: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  resourceChip: {
+    fontSize: 11.5,
+    color: "#B9BEC4",
+    background: "rgba(122,127,135,0.15)",
+    border: "1px solid rgba(122,127,135,0.35)",
+    borderRadius: 20,
+    padding: "5px 12px",
+    textDecoration: "none",
+    cursor: "pointer",
   },
 };
