@@ -3,6 +3,7 @@ import ChatPage from './pages/ChatPage';
 import MoodLogPage from './pages/MoodLogPage';
 import ResourcesPage from './pages/ResourcesPage';
 import TaskPlannerPage from './pages/TaskPlannerPage';
+import logoFisi from './assets/Logo-fisi.png';
 import './styles/global.css';
 
 function App() {
@@ -27,9 +28,9 @@ function App() {
     <div className="app">
       <div className="sidebar">
         <div className="logo-area">
-          <div className="logo">🧠</div>
+          <img src={logoFisi} alt="FISI" className="logo" />
           <h2>FISIAgent</h2>
-          <span className="tagline">acompañamiento emocional</span>
+          <span className="tagline">ayuda académica y bienestar</span>
         </div>
         
         <nav className="menu">

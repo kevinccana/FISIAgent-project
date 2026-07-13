@@ -3,13 +3,14 @@ import Message from '../components/Message';
 import CrisisOverlay from '../components/CrisisOverlay';
 import VideoPopup from '../components/VideoPopup';
 import { sendMessage } from '../services/api';
+import logoFisi from '../assets/Logo-fisi.png';
 
 function ChatPage() {
   const [messages, setMessages] = useState([
-    { 
-      id: 1, 
-      sender: 'bot', 
-      text: "Hola, soy FISIAgent. ¿Cómo te sientes hoy?", 
+    {
+      id: 1,
+      sender: 'bot',
+      text: "Hola, soy FISIAgent, tu asistente de ayuda académica. ¿En qué puedo ayudarte hoy?",
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -135,7 +136,7 @@ function ChatPage() {
         {/* Header con hora, indicador de riesgo y botón SOS */}
         <div className="chat-header">
           <div className="chat-header-left">
-            <div className="logo-small">🧠</div>
+            <img src={logoFisi} alt="FISI" className="logo-small" />
             <span className="session-info">sesión #001 - iniciada {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
           <div className="chat-header-right">
