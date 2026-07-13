@@ -3,7 +3,9 @@ FISIAgent-Back/__pycache__/
 FISIAgent-Back/**/__pycache__/
 *.pyc
 FISIAgent-Back/chroma_db/
-*.mp4
-*.png
 *.sqlite3
-*.bin
+
+# El Dockerfile ahora clona el modelo BETO desde el Hub de Hugging Face en
+# build time (kevinccana/FisiAgent-BETO) -- ya no vive versionado en este repo.
+# Sigue siendo necesario en disco para correr el backend localmente sin Docker.
+BETO_model/

@@ -217,11 +217,15 @@ Si prefieres dispararlos manualmente sin hacer un commit nuevo:
 
 ### `sync-to-hf.yml`
 
-1. Hace `checkout` del repo completo, **incluyendo Git LFS** (`lfs: true`) — necesario para que `BETO_model/` se traiga como archivos reales, no como punteros de texto.
+El modelo BETO **ya no viaja en este repo**: el `Dockerfile` lo clona directamente desde su propio repo de modelo en el Hub (`huggingface.co/kevinccana/FisiAgent-BETO`) durante el build del contenedor. Esto simplifica el workflow — ya no hace falta armar un subconjunto mínimo del repo, se puede mandar un mirror completo:
+
+1. Hace `checkout` del repo completo, **incluyendo Git LFS** (`lfs: true`) — necesario para que los binarios trackeados con LFS a nivel raíz (`*.mp4`, `*.png`, `*.bin` — ver `.gitattributes`, ej. el video de `CrisisOverlay`) se traigan como archivos reales, no como punteros de texto.
 2. Antepone temporalmente un bloque YAML (`sdk: docker`, `app_port: 7860`, etc.) al inicio de `README.md` **solo en el checkout local del runner** — Hugging Face necesita ese bloque para saber qué SDK usar y en qué puerto escuchar. Este cambio **no se sube a GitHub**, solo viaja hacia Hugging Face.
 3. Hace un commit local (efímero, vive solo en el runner) con ese README modificado.
-4. Agrega el repositorio del Space como remoto Git (`https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE`) y hace `git push --force` — el `--force` es necesario porque el Space empieza con su propio historial de Git (el de la plantilla "Blank Docker") y no comparte ancestros con tu repo.
-5. Al recibir el push, Hugging Face detecta el `Dockerfile` en la raíz y reconstruye automáticamente el contenedor.
+4. Hace `git lfs fetch --all` y agrega el repositorio del Space como remoto Git (`https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE`), luego `git push --force` — el `--force` es necesario porque el Space empieza con su propio historial de Git (el de la plantilla "Blank Docker") y no comparte ancestros con tu repo.
+5. Al recibir el push, Hugging Face detecta el `Dockerfile` en la raíz y reconstruye automáticamente el contenedor — el paso `RUN git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/BETO_model` del `Dockerfile` descarga el modelo en ese momento.
+
+> **Importante:** cualquier archivo binario grande que agregues al repo (frontend o backend) debe estar cubierto por un patrón en `.gitattributes` (`filter=lfs`) **y no debe estar en `.gitignore`** — ambas cosas a la vez impiden que `git add` lo trackee. Si un push a Hugging Face falla con *"Your push was rejected because it contains binary files"*, ese es el síntoma (ver Troubleshooting).
 
 ### `deploy-pages.yml`
 
@@ -258,7 +262,7 @@ docker run -p 7860:7860 --env-file FISIAgent-Back/.env \
 
 No hay que repetir nada de la configuración manual. Cualquier `git push` a `main` vuelve a disparar ambos workflows automáticamente:
 
-- Cambios solo en `FISIAgent-Back/`, `Dockerfile`, `BETO_model/` → solo corre `sync-to-hf.yml` (el workflow de Pages no tiene ningún `paths:` que matchee, así que no se dispara — revisa el archivo si agregas carpetas nuevas al backend).
+- Cambios solo en `FISIAgent-Back/` o `Dockerfile` → solo corre `sync-to-hf.yml` (el workflow de Pages no tiene ningún `paths:` que matchee, así que no se dispara — revisa el archivo si agregas carpetas nuevas al backend). `BETO_model/` está gitignoreado, así que nunca genera un push por sí solo — para actualizar el modelo, publica una nueva versión en `huggingface.co/kevinccana/FisiAgent-BETO` y vuelve a correr `sync-to-hf.yml` manualmente para forzar un rebuild.
 - Cambios solo en `FISIAgent-Front/` → solo corre `deploy-pages.yml`.
 - Cambios en ambos → corren los dos, en paralelo.
 
@@ -285,9 +289,14 @@ Si cambias `VITE_API_URL` o `HF_SPACE` en GitHub (Settings → Secrets and varia
 - Verifica que el `Dockerfile` tenga la línea `--index-url https://download.pytorch.org/whl/cpu` antes de instalar `torch`.
 
 ### En los logs del Space aparece `[BETO] Carpeta del modelo no encontrada`
-- El `Dockerfile` no encontró `BETO_model/` al momento del build, o `BETO_MODEL_PATH` está mal.
-- Revisa que el push a Hugging Face haya subido los archivos reales (no punteros LFS): en la pestaña **Files** del Space, abre `BETO_model/model.safetensors` — si el archivo pesa ~419 MB, está bien; si pesa un par de líneas de texto, Git LFS no se resolvió en el runner de GitHub Actions.
-  - Fix: confirma que el workflow tiene `lfs: true` en el `actions/checkout` (ya viene así en `sync-to-hf.yml`) y que corriste `git lfs fetch --all` antes del push (también ya incluido).
+- El modelo se descarga durante el **build** del `Dockerfile` (`RUN git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/BETO_model`), no viaja versionado en este repo. Si esto falla:
+  - Revisa los **Build logs** del Space (no los Container logs) — un `git clone` fallido ahí es la causa más común (repo del modelo movido, hecho privado, o rate-limit).
+  - Confirma que `huggingface.co/kevinccana/FisiAgent-BETO` sea público (o que el Space tenga credenciales para clonarlo si es privado).
+  - Verifica que `BETO_MODEL_PATH=/app/BETO_model` (seteado en el `Dockerfile`) coincida con el destino del `git clone`.
+
+### `remote: Your push was rejected because it contains binary files` (menciona un `.mp4`, `.png` u otro binario)
+- Causa: ese archivo no está cubierto por un patrón `filter=lfs` en algún `.gitattributes` del repo, **o** está listado en `.gitignore` (lo que bloquea que `git add` lo trackee, incluso si `.gitattributes` sí lo cubre — ambos archivos actúan en conjunto).
+- Fix: agrega el patrón correspondiente a `.gitattributes` (raíz del repo, ej. `*.mp4 filter=lfs diff=lfs merge=lfs -text`) y confirma que **no** haya una entrada que lo ignore en `.gitignore`. Luego vuelve a agregar el archivo (`git rm --cached <archivo>` seguido de `git add <archivo>` si ya estaba trackeado sin LFS) para que el filtro LFS lo re-procese.
 
 ### Error de CORS en la consola del navegador (`blocked by CORS policy`)
 - `FRONTEND_URL` no está configurado en el backend, o no coincide exactamente con la URL de GitHub Pages (protocolo `https://`, sin `/` final).

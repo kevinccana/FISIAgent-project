@@ -286,14 +286,14 @@ def analyze_daily_schedule(user_id: str, target_date: date):
 
 
 @router.get("/suggestions/{user_id}", response_model=OrganizationSuggestionsDTO)
-def get_organization_suggestions(user_id: str):
+async def get_organization_suggestions(user_id: str):
     """
     Obtiene sugerencias de organización general usando IA.
     
     Analiza todas las tareas del usuario y proporciona diagnóstico y recomendaciones.
     """
     try:
-        suggestions = get_suggestions_uc.execute(user_id)
+        suggestions = await get_suggestions_uc.execute(user_id)
         
         return OrganizationSuggestionsDTO(
             diagnosis=suggestions["diagnosis"],

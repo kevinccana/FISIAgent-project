@@ -209,12 +209,12 @@ Si el modelo no puede cargarse, el sistema degrada automáticamente a detección
 ```
 FISIAgent-project/
 │
-├── BETO_model/                     # Pesos y configuración del modelo entrenado
-│   ├── config.json                 # Arquitectura del modelo (BERT, 3 clases)
-│   ├── model.safetensors           # Pesos del modelo (~420 MB)
-│   ├── tokenizer.json              # Tokenizador BERT en español
-│   ├── tokenizer_config.json       # Configuración del tokenizador
-│   └── training_args.bin           # Argumentos de entrenamiento
+├── BETO_model/                        # NO versionado en este repo (ver nota abajo).
+│   ├── config.json                    # Se descarga desde huggingface.co/kevinccana/FisiAgent-BETO
+│   ├── model.safetensors              # para desarrollo local, y el Dockerfile lo clona
+│   ├── tokenizer.json                 # de ahí mismo durante el build del contenedor.
+│   ├── tokenizer_config.json
+│   └── training_args.bin
 │
 ├── FISIAgent-Back/                        # Backend FastAPI — Arquitectura Hexagonal
 │   ├── app/
@@ -267,7 +267,8 @@ FISIAgent-project/
 - Python 3.10+
 - Node.js 18+
 - pip
-- [Git LFS](https://git-lfs.com/) — necesario para descargar el modelo BETO (~420 MB)
+- [Git LFS](https://git-lfs.com/) — necesario para los binarios que sí viven en este repo (video de `CrisisOverlay`, sprites de `MoodLogPage`)
+- [Git](https://git-scm.com/) para clonar el modelo BETO desde su propio repo en el Hub (paso 2)
 
 ---
 
@@ -279,18 +280,24 @@ Git LFS almacena archivos grandes fuera del repositorio pero los descarga autom�
 # Instalar Git LFS (solo la primera vez en cada máquina)
 git lfs install
 
-# Clonar el repositorio (descarga automáticamente BETO_model/)
 git clone https://github.com/kevinccana/FISIAgent-project.git
 cd FISIAgent-project
 ```
 
-> Si ya clonaste el repo antes de que LFS estuviera configurado, ejecuta `git lfs pull` para descargar el modelo.
+> Si ya clonaste el repo antes de que LFS estuviera configurado, ejecuta `git lfs pull` para descargar los binarios (video, sprites).
 
 ---
 
-### Paso 2 — Configurar el modelo BETO
+### Paso 2 — Descargar el modelo BETO
 
-El modelo se descarga automáticamente con el clone. Verifica que la carpeta exista:
+El modelo **no vive en este repositorio** — tiene su propio repo de modelo en el Hub de Hugging Face para no inflar el historial de Git de FISIAgent-project con ~420 MB de pesos. Para desarrollo local, clónalo directamente en la raíz del proyecto:
+
+```bash
+# Desde la raíz de FISIAgent-project/
+git clone https://huggingface.co/kevinccana/FisiAgent-BETO BETO_model
+```
+
+Verifica que quede así:
 
 ```
 FISIAgent-project/
@@ -302,11 +309,7 @@ FISIAgent-project/
     └── training_args.bin
 ```
 
-Si la carpeta está vacía o no existe, fórzala a descargar:
-
-```bash
-git lfs pull
-```
+`BETO_model/` está en `.gitignore` — no hace falta (ni se debe) commitear esta carpeta. Si prefieres otra ubicación, apunta `BETO_MODEL_PATH` ahí (ver [Variables de entorno](#variables-de-entorno)). El `Dockerfile` hace este mismo `git clone` automáticamente durante el build, así que en producción no necesitas hacer nada extra.
 
 ---
 

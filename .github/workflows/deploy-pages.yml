@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: FISIAgent-Front
-        run: npm install
+        run: npm ci
 
       - name: Build
         working-directory: FISIAgent-Front

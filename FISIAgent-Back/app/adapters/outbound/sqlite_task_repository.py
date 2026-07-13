@@ -361,7 +361,14 @@ class SQLiteTaskRepository(TaskRepositoryPort):
         
         row = cursor.fetchone()
         total, completed, pending, overdue = row
-        
+        # SUM() sobre 0 filas devuelve NULL (no 0) en SQL -- sin este coalesce,
+        # completed/pending/overdue llegan como None y rompen la validación de
+        # TaskStatisticsDTO (tipados como int) cuando el usuario no tiene tareas.
+        total = total or 0
+        completed = completed or 0
+        pending = pending or 0
+        overdue = overdue or 0
+
         completion_rate = completed / total if total > 0 else 0.0
         
         # Tiempo promedio de completado
