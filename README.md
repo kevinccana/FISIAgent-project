@@ -290,14 +290,16 @@ cd FISIAgent-project
 
 ### Paso 2 — Descargar el modelo BETO
 
-El modelo **no vive en este repositorio** — tiene su propio repo de modelo en el Hub de Hugging Face para no inflar el historial de Git de FISIAgent-project con ~420 MB de pesos. Para desarrollo local, clónalo directamente en la raíz del proyecto:
+El modelo **no vive en este repositorio** — tiene su propio repo de modelo en el Hub de Hugging Face para no inflar el historial de Git de FISIAgent-project con ~420 MB de pesos. Para desarrollo local, clónalo y sube un nivel su contenido (el repo de modelo tiene los archivos anidados en una subcarpeta `BETO_model/`, no en la raíz):
 
 ```bash
 # Desde la raíz de FISIAgent-project/
-git clone https://huggingface.co/kevinccana/FisiAgent-BETO BETO_model
+git clone https://huggingface.co/kevinccana/FisiAgent-BETO beto-repo-tmp
+mv beto-repo-tmp/BETO_model ./BETO_model
+rm -rf beto-repo-tmp
 ```
 
-Verifica que quede así:
+Verifica que quede así (sin doble anidamiento):
 
 ```
 FISIAgent-project/
@@ -309,7 +311,7 @@ FISIAgent-project/
     └── training_args.bin
 ```
 
-`BETO_model/` está en `.gitignore` — no hace falta (ni se debe) commitear esta carpeta. Si prefieres otra ubicación, apunta `BETO_MODEL_PATH` ahí (ver [Variables de entorno](#variables-de-entorno)). El `Dockerfile` hace este mismo `git clone` automáticamente durante el build, así que en producción no necesitas hacer nada extra.
+`BETO_model/` está en `.gitignore` — no hace falta (ni se debe) commitear esta carpeta. Si prefieres otra ubicación, apunta `BETO_MODEL_PATH` ahí (ver [Variables de entorno](#variables-de-entorno)). El `Dockerfile` hace este mismo `git clone` durante el build (a `/app/beto-repo`, apuntando `BETO_MODEL_PATH` a la subcarpeta anidada directamente — no necesita el paso de mover archivos que sí hace falta en local), así que en producción no necesitas hacer nada extra.
 
 ---
 

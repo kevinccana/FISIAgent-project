@@ -226,9 +226,14 @@ docker run -p 7860:7860 --env-file FISIAgent-Back/.env \
 - Si necesitas RAG también en producción, la alternativa es un plan de Render con más RAM (Starter o superior).
 
 ### En los logs aparece `[BETO] Carpeta del modelo no encontrada`
-- El modelo se descarga durante el **build** del `Dockerfile` (`RUN git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/BETO_model`), no viaja versionado en este repo.
+- El modelo se descarga durante el **build** del `Dockerfile` (`git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/beto-repo`), no viaja versionado en este repo.
 - Revisa los logs de **build** (no los de runtime) — un `git clone` fallido ahí es la causa más común (repo del modelo movido, hecho privado, o problema de red puntual — reintenta con "Manual Deploy").
 - Confirma que `huggingface.co/kevinccana/FisiAgent-BETO` siga siendo público.
+
+### `/status` dice `"beto": "fallback"` y en runtime aparece `Unrecognized model in ... Should have a model_type key in its config.json`
+- Causa ya resuelta una vez: el repo de modelo `kevinccana/FisiAgent-BETO` tiene los archivos anidados en una subcarpeta `BETO_model/` (se subió una carpeta local que ya se llamaba así, en vez de su contenido a la raíz del repo). Si alguien vuelve a publicar el modelo ahí sin corregir esa estructura, `git clone` trae los archivos reales en `/app/beto-repo/BETO_model/`, no en `/app/beto-repo/` — y `BETO_MODEL_PATH` tiene que apuntar a esa subcarpeta.
+- Verifica la estructura real del repo de modelo: `curl -s "https://huggingface.co/api/models/kevinccana/FisiAgent-BETO" | grep rfilename` — si `config.json` aparece como `BETO_model/config.json` (anidado) en vez de `config.json` (raíz), el `Dockerfile` debe clonar a una carpeta intermedia (ej. `/app/beto-repo`) y fijar `BETO_MODEL_PATH=/app/beto-repo/BETO_model`.
+- Confírmalo localmente antes de desplegar: `AutoModelForSequenceClassification.from_pretrained(ruta)` debe cargar sin error y reportar `model_type=bert`.
 
 ### Error de CORS en la consola del navegador (`blocked by CORS policy`)
 - `FRONTEND_URL` no está configurado en Render, o no coincide exactamente con la URL de GitHub Pages.
