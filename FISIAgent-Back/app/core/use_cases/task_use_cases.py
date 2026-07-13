@@ -317,20 +317,20 @@ class AnalyzeDailyScheduleUseCase:
         self.repository = repository
         self.planner_agent = planner_agent
     
-    def execute(self, user_id: str, target_date: date) -> DailySchedule:
+    async def execute(self, user_id: str, target_date: date) -> DailySchedule:
         """
         Analiza la carga de trabajo de un día específico.
-        
+
         Args:
             user_id: ID del usuario
             target_date: Fecha a analizar
-        
+
         Returns:
             Agenda diaria con recomendaciones
         """
         # Obtener tareas del día
         tasks = self.repository.get_tasks_for_date(user_id, target_date)
-        
+
         # Llamar al agente para análisis
         agent_task = AgentTask(
             agent_role=AgentRole.PLANNER,
@@ -340,8 +340,8 @@ class AnalyzeDailyScheduleUseCase:
                 "tasks": tasks
             }
         )
-        
-        result = self.planner_agent.execute(agent_task)
+
+        result = await self.planner_agent.execute(agent_task)
         
         if result.success and isinstance(result.data, DailySchedule):
             return result.data

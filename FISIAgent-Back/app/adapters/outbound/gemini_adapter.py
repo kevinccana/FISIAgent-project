@@ -92,20 +92,24 @@ class GeminiAdapter(LLMServicePort):
 
     def check_connection(self) -> dict:
         """
-        Verifica que la API key funcione de verdad contra los servidores de Gemini
-        (a diferencia de `is_available()`, que solo construye el cliente localmente
-        y no detecta una key inválida o sin cupo).
+        Verifica que la API key pueda generar contenido de verdad.
 
-        Usa `count_tokens`, la llamada más liviana disponible -- no genera texto,
-        solo confirma que la key es válida y que el modelo responde.
+        Ojo: usa `generate_content` (no `count_tokens`) a propósito -- son cuotas
+        separadas en la API de Gemini. `count_tokens` puede responder OK aunque
+        `generate_content` esté sin cupo (limit=0 en el free tier, por ejemplo),
+        así que `count_tokens` daría un falso "conectado" que no refleja si el
+        chat real va a funcionar.
 
         Returns:
-            {"ok": True} si la key funciona, o
+            {"ok": True} si la key genera contenido, o
             {"ok": False, "detail": "..."} con el motivo (401, 429 sin cupo, etc.)
         """
         try:
             client = self._get_client()
-            client.models.count_tokens(model="gemini-2.5-flash", contents="ping")
+            client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents="di 'ok' y nada más",
+            )
             return {"ok": True, "detail": None}
         except Exception as e:
             logger.warning(f"[Gemini] check_connection falló: {e}")

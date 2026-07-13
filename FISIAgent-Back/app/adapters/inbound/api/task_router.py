@@ -263,14 +263,14 @@ def get_statistics(
 
 
 @router.get("/schedule/{user_id}/{target_date}", response_model=DailyScheduleDTO)
-def analyze_daily_schedule(user_id: str, target_date: date):
+async def analyze_daily_schedule(user_id: str, target_date: date):
     """
     Analiza la carga de trabajo de un día específico con IA.
-    
+
     Devuelve las tareas del día y recomendaciones inteligentes.
     """
     try:
-        schedule = analyze_schedule_uc.execute(user_id, target_date)
+        schedule = await analyze_schedule_uc.execute(user_id, target_date)
         
         return DailyScheduleDTO(
             date=schedule.date,
