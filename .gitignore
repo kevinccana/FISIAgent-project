@@ -3,3 +3,7 @@ FISIAgent-Back/__pycache__/
 FISIAgent-Back/**/__pycache__/
 *.pyc
 FISIAgent-Back/chroma_db/
+*.mp4
+*.png
+*.sqlite3
+*.bin
