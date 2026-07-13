@@ -17,7 +17,7 @@ class TaskPriority(IntEnum):
     HIGH = 1        # Alta prioridad
     MEDIUM = 2      # Prioridad media
     LOW = 3         # Baja prioridad
-    
+
     @property
     def label(self) -> str:
         """Etiqueta legible."""
@@ -28,7 +28,7 @@ class TaskPriority(IntEnum):
             3: "Baja"
         }
         return labels[self.value]
-    
+
     @property
     def emoji(self) -> str:
         """Emoji representativo."""
@@ -47,7 +47,7 @@ class TaskStatus(IntEnum):
     IN_PROGRESS = 1  # En progreso
     COMPLETED = 2    # Completada
     CANCELLED = 3    # Cancelada
-    
+
     @property
     def label(self) -> str:
         """Etiqueta legible."""
@@ -58,7 +58,7 @@ class TaskStatus(IntEnum):
             3: "Cancelada"
         }
         return labels[self.value]
-    
+
     @property
     def emoji(self) -> str:
         """Emoji representativo."""
@@ -75,7 +75,7 @@ class TaskStatus(IntEnum):
 class Task:
     """
     Entidad de dominio: Tarea del estudiante.
-    
+
     Representa una actividad académica o personal que el estudiante
     debe completar, con fecha límite y prioridad.
     """
@@ -90,37 +90,43 @@ class Task:
     completed_at: Optional[datetime] = None
     id: Optional[int] = None
     created_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         """Validaciones de negocio."""
+        # Normaliza due_date a naive (sin timezone) para evitar mezclar
+        # aware/naive en comparaciones con datetime.now() en las properties
+        # (is_overdue, days_until_due, urgency_score).
+        if self.due_date.tzinfo is not None:
+            self.due_date = self.due_date.replace(tzinfo=None)
+
         if not self.title or len(self.title.strip()) == 0:
             raise ValueError("El título de la tarea no puede estar vacío")
-        
+
         if len(self.title) > 200:
             raise ValueError("El título no puede exceder 200 caracteres")
-        
+
         if len(self.description) > 1000:
             raise ValueError("La descripción no puede exceder 1000 caracteres")
-        
+
         if self.estimated_hours <= 0:
             raise ValueError("Las horas estimadas deben ser positivas")
-        
+
         if self.estimated_hours > 100:
             raise ValueError("Las horas estimadas no pueden exceder 100")
-    
+
     @property
     def is_overdue(self) -> bool:
         """Indica si la tarea está vencida."""
         if self.status in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]:
             return False
         return datetime.now() > self.due_date
-    
+
     @property
     def days_until_due(self) -> int:
         """Días hasta la fecha límite (negativo si está vencida)."""
         delta = self.due_date - datetime.now()
         return delta.days
-    
+
     @property
     def urgency_score(self) -> float:
         """
@@ -135,7 +141,7 @@ class Task:
             TaskPriority.LOW: 1.0
         }
         priority_score = priority_weight.get(self.priority, 1.0)
-        
+
         # Factor de tiempo (0.0 a 6.0)
         days = self.days_until_due
         if days < 0:
@@ -152,7 +158,7 @@ class Task:
             time_score = 2.0
         else:
             time_score = 1.0
-        
+
         return priority_score + time_score
 
 
@@ -160,7 +166,7 @@ class Task:
 class Reminder:
     """
     Entidad de dominio: Recordatorio de tarea.
-    
+
     Notificación programada para recordar al estudiante sobre una tarea.
     """
     task_id: int
@@ -169,9 +175,13 @@ class Reminder:
     is_sent: bool = False
     id: Optional[int] = None
     created_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         """Validaciones."""
+        # Normaliza remind_at a naive, por la misma razón que en Task.
+        if self.remind_at.tzinfo is not None:
+            self.remind_at = self.remind_at.replace(tzinfo=None)
+
         if self.remind_at < datetime.now() - timedelta(hours=1):
             raise ValueError("La fecha de recordatorio no puede estar muy en el pasado")
 
@@ -193,7 +203,7 @@ class TaskStatistics:
     tasks_by_priority: dict[str, int]
     tasks_by_category: dict[str, int]
     productivity_trend: str  # "mejorando", "estable", "decayendo"
-    
+
     @property
     def completion_percentage(self) -> float:
         """Porcentaje de tareas completadas."""
@@ -222,7 +232,7 @@ class DailySchedule:
     total_estimated_hours: float
     is_feasible: bool
     recommendations: List[str] = field(default_factory=list)
-    
+
     @property
     def is_overloaded(self) -> bool:
         """Indica si la carga diaria es excesiva (>8 horas)."""

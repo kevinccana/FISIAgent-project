@@ -34,7 +34,7 @@ transformers
 safetensors
 
 # RAG Dependencies (Early Adopters - InfoQ 2025)
-langchain==0.3.18
+langchain==0.3.20
 langchain-community==0.3.18
-chromadb==0.6.7
-sentence-transformers==3.4.2
+chromadb==1.5.9
+sentence-transformers==4.0.0

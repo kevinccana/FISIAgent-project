@@ -107,7 +107,7 @@ class CreateTaskUseCase:
             
             # Llamar al agente
             agent_task = AgentTask(
-                role=AgentRole.PLANNER,
+                agent_role=AgentRole.PLANNER,
                 input_data={
                     "action": "suggest_priority",
                     "task": temp_task,
@@ -333,7 +333,7 @@ class AnalyzeDailyScheduleUseCase:
         
         # Llamar al agente para análisis
         agent_task = AgentTask(
-            role=AgentRole.PLANNER,
+            agent_role=AgentRole.PLANNER,
             input_data={
                 "action": "analyze_schedule",
                 "target_date": target_date,
@@ -364,7 +364,7 @@ class GetTaskOrganizationSuggestionsUseCase:
         self.repository = repository
         self.planner_agent = planner_agent
     
-    def execute(self, user_id: str) -> dict:
+    async def execute(self, user_id: str) -> dict:
         """
         Analiza todas las tareas del usuario y da sugerencias.
         
@@ -385,7 +385,7 @@ class GetTaskOrganizationSuggestionsUseCase:
         
         # Llamar al agente
         agent_task = AgentTask(
-            role=AgentRole.PLANNER,
+            agent_role=AgentRole.PLANNER,
             input_data={
                 "action": "suggest_organization",
                 "tasks": all_tasks,
@@ -393,7 +393,7 @@ class GetTaskOrganizationSuggestionsUseCase:
             }
         )
         
-        result = self.planner_agent.execute(agent_task)
+        result = await self.planner_agent.execute(agent_task)
         
         if result.success:
             return result.data

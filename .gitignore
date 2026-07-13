@@ -2,3 +2,16 @@ FISIAgent-Back/.env
 FISIAgent-Back/__pycache__/
 FISIAgent-Back/**/__pycache__/
 *.pyc
+
+# Bases de datos y datos generados
+*.db
+chroma_db/
+FISIAgent-Back/chroma_db/
+
+# Entorno virtual
+venv/
+FISIAgent-Back/venv/
+
+# Node (frontend)
+node_modules/
+FISIAgent-Front/node_modules/

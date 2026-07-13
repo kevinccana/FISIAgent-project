@@ -89,7 +89,7 @@ REGLAS CRÍTICAS:
             
             # Generar respuesta con LLM
             logger.info(f"EmpathyResponderAgent: Generando respuesta con RAG={bool(rag_context)}")
-            respuesta = self.llm_service.generate_response(history, system_instruction)
+            respuesta = await self.llm_service.generate_response(history, system_instruction)
             
             # Recomendar video si es nivel Moderado
             video = None
