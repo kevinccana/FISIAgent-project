@@ -342,7 +342,7 @@
           <div class="card">
             <span class="tag">Módulo 2</span>
             <h3>Dashboard de Bienestar</h3>
-            <p>Registro diario de estado de ánimo con calendario, gráficos históricos e insights automáticos generados a partir de reglas de negocio.</p>
+            <p>Registro diario de estado de ánimo con calendario, gráficos históricos, insights automáticos por reglas, y un análisis narrativo más profundo bajo demanda con un agente de IA (Gemini).</p>
           </div>
           <div class="card">
             <span class="tag">Módulo 3</span>
@@ -351,7 +351,7 @@
           </div>
         </div>
         <p style="text-align:center; color: var(--ink-faint); font-family: var(--mono); font-size: 11.5px;">
-          FastAPI · Arquitectura Hexagonal (Ports &amp; Adapters) · React + Vite · SQLite · ChromaDB · Google Gemini 2.5 Flash
+          FastAPI · Arquitectura Hexagonal (Ports &amp; Adapters) · React + Vite · SQLite · ChromaDB · Google Gemini 3.1 Flash Lite
         </p>
       </div>
     </section>
@@ -435,7 +435,7 @@
           <div class="card">
             <span class="trend-pill"><span class="sw late-majority"></span>Late Majority</span>
             <h3>LLMs</h3>
-            <p>Modelos de lenguaje de propósito general (Gemini 2.5 Flash) ya asentados como motor conversacional.</p>
+            <p>Modelos de lenguaje de propósito general (Gemini 3.1 Flash Lite) ya asentados como motor conversacional.</p>
           </div>
         </div>
         <p style="text-align:center; color: var(--ink-faint); font-size: 12.5px;">
@@ -503,8 +503,9 @@
           <p><strong>CoordinadorAgente</strong> orquesta a <strong>RiskAnalyzerAgent</strong>, <strong>RAGRetrieverAgent</strong> y <strong>EmpathyResponderAgent</strong>, decidiendo en tiempo real si activar RAG y si escalar a crisis. <span class="num">core/agents/</span></p>
         </div>
         <div class="trend-block on">
-          <div class="head"><span class="trend-pill"><span class="sw early-adopters"></span>RAG</span><h4>ChromaDB + LangChain</h4><span class="status">Implementado</span></div>
+          <div class="head"><span class="trend-pill"><span class="sw early-adopters"></span>RAG</span><h4>ChromaDB + LangChain</h4><span class="status">Implementado*</span></div>
           <p>Recupera fragmentos de 3 documentos reales de la FISI-UNSM (reglamento, plan de estudios, FAQ) cuando el mensaje contiene keywords académicas. <span class="num">rag_adapter.py</span></p>
+          <p style="font-size: 11.5px; color: var(--ink-faint);">* Deshabilitado en el despliegue en la nube (<span class="num">ENABLE_RAG=false</span>) — el modelo de embeddings no entra en la RAM del free tier junto a BETO. Sigue activo y demostrable en local — ver Vista de despliegue.</p>
         </div>
         <div class="trend-block on">
           <div class="head"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span><h4>BETO especializado</h4><span class="status">Implementado</span></div>
@@ -603,29 +604,37 @@
         <div class="mod-index">02</div>
         <div class="kicker"><span class="dot"></span>Módulo 2</div>
         <h1 class="title">Dashboard de Bienestar</h1>
-        <p class="subtitle">Persistencia + analítica basada en reglas — el módulo que demuestra que no todo requiere IA generativa.</p>
+        <p class="subtitle">Persistencia + analítica por reglas, con un agente de IA opt-in para un análisis más profundo.</p>
         <div class="pills">
-          <span class="trend-pill" style="opacity:0.45"><span class="sw innovators"></span>Agentic AI</span>
+          <span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span>
           <span class="trend-pill" style="opacity:0.45"><span class="sw early-adopters"></span>RAG</span>
           <span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span>
-          <span class="trend-pill" style="opacity:0.45"><span class="sw late-majority"></span>LLMs</span>
+          <span class="trend-pill"><span class="sw late-majority"></span>LLMs</span>
         </div>
       </div>
     </section>
 
-    <!-- 12 — M2 TENDENCIAS (HONESTO) ======================================= -->
+    <!-- 12 — M2 TENDENCIAS APLICADAS ======================================= -->
     <section class="slide">
       <div class="kicker"><span class="dot"></span>Módulo 2 · Tendencias aplicadas</div>
-      <h1 class="title">Por qué este módulo no usa las cuatro</h1>
-      <div class="slide-body" style="justify-content: center; gap: 22px;">
-        <p class="lede">El registro de ánimo, el calendario y los insights son <strong>lógica de negocio determinística</strong> (promedios, tendencias, umbrales) — no requieren un LLM para generar valor, y forzar uno habría sido sobre-ingeniería.</p>
-        <div class="trend-block">
-          <div class="head"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span><h4>Único punto de contacto real</h4><span class="status">Implementado</span></div>
-          <p>Los 6 casos de uso y los algoritmos de <code class="num">_generate_insights</code> / <code class="num">_generate_recommendations</code> se escribieron con asistencia de Copilot/Claude, siguiendo el mismo patrón hexagonal que los otros módulos.</p>
+      <h1 class="title">De reglas fijas a un agente opt-in</h1>
+      <div class="slide-body" style="justify-content: center; gap: 20px;">
+        <p class="lede" style="font-size: clamp(13px, 1.1vw, 16px);">El registro, el calendario y los insights base siguen siendo <strong>lógica de negocio determinística</strong> (promedios, tendencias, umbrales) — pero se sumó un agente de IA para un análisis más elaborado, sin obligar a nadie a pagar su costo si no lo pide.</p>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span><h4>MoodInsightsAgent</h4><span class="status">Implementado</span></div>
+          <p>Agente especializado que analiza estadísticas, evolución mensual y <strong>las notas reales</strong> que el estudiante escribió, para generar un diagnóstico narrativo — no solo repetir los números. <span class="num">mood_insights_agent.py</span></p>
+        </div>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw late-majority"></span>LLMs</span><h4>Gemini, bajo demanda</h4><span class="status">Implementado</span></div>
+          <p>Endpoint separado (<span class="num">GET /mood/insights/{user}/ai</span>), disparado por un botón aparte en el frontend — a diferencia del chat, no se llama en automático, para no gastar el cupo limitado de Gemini en cada carga de página.</p>
+        </div>
+        <div class="trend-block on">
+          <div class="head"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span><h4>Reglas + agente, mismo patrón hexagonal</h4><span class="status">Implementado</span></div>
+          <p>Los 6 casos de uso originales (deterministas) y el agente nuevo conviven en la misma arquitectura, escritos con asistencia de Copilot/Claude.</p>
         </div>
         <div class="trend-block">
-          <div class="head"><h4>Agentic AI, RAG, LLMs</h4><span class="status" style="color: var(--ink-faint);">No aplica</span></div>
-          <p>No hay recuperación documental, ni generación de lenguaje, ni un agente que decida un flujo — las "recomendaciones" son reglas explícitas sobre <span class="num">avg_mood</span> y <span class="num">mood_trend</span>, completamente auditables.</p>
+          <div class="head"><h4>RAG</h4><span class="status" style="color: var(--ink-faint);">No aplica</span></div>
+          <p>No hay documentos institucionales que recuperar aquí — el contexto del agente es el propio historial emocional del estudiante, no una base documental.</p>
         </div>
       </div>
     </section>
@@ -643,12 +652,14 @@
             <tbody>
               <tr><td class="req">RF4 — Registro diario de ánimo</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
               <tr><td class="req">RF4 — Visualización histórica</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
-              <tr><td class="req">RF4 — Insights y recomendaciones</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RF4 — Insights base (siempre disponibles)</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RF4 — Análisis narrativo elaborado (opt-in)</td><td class="mark yes">✓</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td></tr>
               <tr><td class="req">RNF1 — Persistencia confiable</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓</td><td class="mark no">—</td></tr>
+              <tr><td class="req">RNF2 — Costo operativo bajo</td><td class="mark yes">✓ opt-in</td><td class="mark no">—</td><td class="mark no">—</td><td class="mark yes">✓ opt-in</td></tr>
             </tbody>
           </table>
         </div>
-        <p style="color: var(--ink-faint); font-size: 12px;">La columna que domina este módulo es <strong style="color: var(--ink-muted);">AI-assisted dev</strong> — el resto de tendencias simplemente no aportaban valor aquí.</p>
+        <p style="color: var(--ink-faint); font-size: 12px;">El diseño opt-in hace que <strong style="color: var(--ink-muted);">Agentic AI</strong> y <strong style="color: var(--ink-muted);">LLMs</strong> resuelvan RNF2 (costo bajo) en vez de violarlo — el estudiante decide cuándo pagar el costo de una llamada a Gemini.</p>
       </div>
     </section>
 
@@ -660,22 +671,27 @@
         <div class="context-row">
           <div class="ctx-box"><span class="label">Actor</span><span class="name">Estudiante</span><span class="desc">Registra su ánimo del día</span></div>
           <div class="ctx-arrow">→</div>
-          <div class="ctx-box center"><span class="label">Sistema</span><span class="name">FISIAgent · Mood</span><span class="desc">6 endpoints /mood/*</span></div>
+          <div class="ctx-box center"><span class="label">Sistema</span><span class="name">FISIAgent · Mood</span><span class="desc">7 endpoints /mood/*</span></div>
           <div class="ctx-arrow">→</div>
-          <div class="ctx-box"><span class="label">Externo</span><span class="name">SQLite</span><span class="desc">fisiagent.db (tabla mood_logs)</span></div>
+          <div class="ctx-stack">
+            <div class="ctx-box"><span class="label">Externo</span><span class="name">SQLite</span><span class="desc">fisiagent.db (tabla mood_entries)</span></div>
+            <div class="ctx-box"><span class="label">Externo</span><span class="name">Gemini API</span><span class="desc">Análisis narrativo (opt-in)</span></div>
+          </div>
         </div>
         <div class="arch-lanes" style="flex: 1;">
           <div class="lane">
             <div class="lane-title">Dominio</div>
             <div class="items">
               <div class="chip"><strong>mood_models.py</strong>MoodEntry · MoodStatistics · MoodLevel</div>
-              <div class="chip"><strong>use_cases/</strong>Register, GetHistory, GetCalendar, GetInsights, Update, Delete</div>
+              <div class="chip"><strong>agents/</strong>MoodInsightsAgent</div>
+              <div class="chip"><strong>use_cases/</strong>Register, GetHistory, GetCalendar, GetInsights, GetAIInsights, Update, Delete</div>
             </div>
           </div>
           <div class="lane">
             <div class="lane-title">Puertos</div>
             <div class="items">
               <div class="chip"><strong>outbound</strong>MoodLogRepositoryPort</div>
+              <div class="chip"><strong>outbound</strong>LLMServicePort (compartido con Módulo 1 y 3)</div>
             </div>
           </div>
           <div class="lane">
@@ -683,6 +699,7 @@
             <div class="items">
               <div class="chip"><strong>inbound</strong>mood_router.py</div>
               <div class="chip"><strong>outbound</strong>SQLiteMoodLogRepository</div>
+              <div class="chip"><strong>outbound</strong>GeminiAdapter (reutilizado)</div>
             </div>
           </div>
         </div>
@@ -692,14 +709,15 @@
     <!-- 15 — M2 VISTA DE PROCESO =========================================== -->
     <section class="slide">
       <div class="kicker"><span class="dot"></span>Módulo 2 · Vista de proceso</div>
-      <h1 class="title">Secuencia de un registro de ánimo</h1>
+      <h1 class="title">Registro automático, análisis bajo demanda</h1>
       <div class="slide-body">
         <div class="sequence">
           <div class="seq-step"><div class="seq-num">1</div><div class="seq-content"><span class="who">mood_router.py</span><span class="what">Recibe <span class="num">POST /mood/register</span> con <span class="num">{ user_id, mood, note }</span>.</span></div></div>
           <div class="seq-step"><div class="seq-num">2</div><div class="seq-content"><span class="who">RegisterMoodUseCase</span><span class="what">Crea la entidad <strong>MoodEntry</strong> — el dominio valida el rango 0–3 y el largo de la nota.</span></div></div>
           <div class="seq-step"><div class="seq-num">3</div><div class="seq-content"><span class="who">SQLiteMoodLogRepository</span><span class="what">Persiste el registro en <span class="num">fisiagent.db</span>.</span></div></div>
-          <div class="seq-step"><div class="seq-num">4</div><div class="seq-content"><span class="who">GetMoodInsightsUseCase</span><span class="what">Calcula tendencia (positivo / neutral / negativo) y genera insights + recomendaciones basados en reglas.</span></div></div>
-          <div class="seq-step"><div class="seq-num">5</div><div class="seq-content"><span class="who">MoodLogPage.jsx</span><span class="what">Pinta el calendario, el gráfico de barras/línea y la tarjeta de insights.</span></div></div>
+          <div class="seq-step"><div class="seq-num">4</div><div class="seq-content"><span class="who">GetMoodInsightsUseCase</span><span class="what">Automático, gratis: calcula tendencia y genera insights + recomendaciones basados en reglas.</span></div></div>
+          <div class="seq-step"><div class="seq-num">5</div><div class="seq-content"><span class="who">Botón "Generar análisis con IA" → MoodInsightsAgent → Gemini</span><span class="what">Opt-in: solo si el estudiante lo pide, analiza estadísticas + notas reales y devuelve diagnóstico + recursos.</span></div></div>
+          <div class="seq-step"><div class="seq-num">6</div><div class="seq-content"><span class="who">MoodLogPage.jsx</span><span class="what">Pinta el calendario, los gráficos, la tarjeta de insights, y (si se pidió) la tarjeta de análisis con IA.</span></div></div>
         </div>
       </div>
     </section>
@@ -826,22 +844,23 @@
     <section class="slide">
       <div class="kicker"><span class="dot"></span>Panorama general</div>
       <h1 class="title">Matriz consolidada — tendencias × módulos</h1>
-      <div class="slide-body" style="justify-content:center;">
+      <div class="slide-body" style="justify-content:center; gap: 18px;">
         <div class="table-wrap">
           <table class="matrix">
             <thead>
               <tr><th>Tendencia</th><th>Módulo 1 — Chat</th><th>Módulo 2 — Bienestar</th><th>Módulo 3 — Planificador</th></tr>
             </thead>
             <tbody>
-              <tr><td class="req"><span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span></td><td class="mark yes">✓ Multi-agente (4)</td><td class="mark no">—</td><td class="mark yes">✓ PlannerAgent</td></tr>
-              <tr><td class="req"><span class="trend-pill"><span class="sw early-adopters"></span>RAG</span></td><td class="mark yes">✓ ChromaDB</td><td class="mark no">—</td><td class="mark no">—</td></tr>
+              <tr><td class="req"><span class="trend-pill"><span class="sw innovators"></span>Agentic AI</span></td><td class="mark yes">✓ Multi-agente (4)</td><td class="mark yes">✓ MoodInsightsAgent</td><td class="mark yes">✓ PlannerAgent</td></tr>
+              <tr><td class="req"><span class="trend-pill"><span class="sw early-adopters"></span>RAG</span></td><td class="mark yes">✓ ChromaDB*</td><td class="mark no">—</td><td class="mark no">—</td></tr>
               <tr><td class="req"><span class="trend-pill"><span class="sw early-majority"></span>AI-assisted dev</span></td><td class="mark yes">✓ BETO</td><td class="mark yes">✓ Copilot/Claude</td><td class="mark yes">✓ Copilot/Claude</td></tr>
-              <tr><td class="req"><span class="trend-pill"><span class="sw late-majority"></span>LLMs</span></td><td class="mark yes">✓ Gemini</td><td class="mark no">—</td><td class="mark yes">✓ Gemini</td></tr>
+              <tr><td class="req"><span class="trend-pill"><span class="sw late-majority"></span>LLMs</span></td><td class="mark yes">✓ Gemini</td><td class="mark yes">✓ Gemini (opt-in)</td><td class="mark yes">✓ Gemini</td></tr>
             </tbody>
           </table>
         </div>
         <p style="color: var(--ink-faint); font-size: 12.5px; text-align:center;">
-          4/4 tendencias en Módulo 1 · 1/4 en Módulo 2 (a propósito) · 3/4 en Módulo 3
+          En código: 4/4 en Módulo 1 · 3/4 en Módulo 2 · 3/4 en Módulo 3 — ninguno usa RAG por elección propia salvo el Chat.<br/>
+          * En la nube (free tier, 512MB RAM): <span class="num">ENABLE_RAG=false</span> — RAG es la única tendencia que no entró en el presupuesto de memoria. Ver Vista de despliegue.
         </p>
       </div>
     </section>
@@ -852,21 +871,22 @@
       <h1 class="title">De un <span class="num">git push</span> a producción</h1>
       <div class="slide-body" style="justify-content: center;">
         <div class="deploy">
-          <div class="deploy-box" style="flex: 0 0 160px;"><div class="t">GitHub · main</div><div class="d">git push dispara 2 workflows en paralelo</div></div>
+          <div class="deploy-box" style="flex: 0 0 160px;"><div class="t">GitHub · main</div><div class="d">git push dispara el deploy del back y el workflow del front, en paralelo</div></div>
           <div class="ctx-arrow">→</div>
           <div class="deploy-col">
-            <div class="deploy-box"><div class="t">sync-to-hf.yml</div><div class="d">Mirror del repo (Git LFS) hacia el Space</div></div>
+            <div class="deploy-box"><div class="t">Render (Web Service)</div><div class="d">Auto-deploy nativo desde GitHub, sin workflow propio</div></div>
             <div class="deploy-arrow-down">↓</div>
-            <div class="deploy-box"><div class="t">Hugging Face Spaces</div><div class="d">Docker · FastAPI + BETO + RAG · puerto 7860</div></div>
+            <div class="deploy-box"><div class="t">Docker · FastAPI + BETO</div><div class="d">Clona BETO del Hub en build time · <span class="num">ENABLE_RAG=false</span> (free tier, 512MB RAM)</div></div>
           </div>
           <div class="deploy-col">
-            <div class="deploy-box"><div class="t">deploy-pages.yml</div><div class="d"><span class="num">npm run build</span> con <span class="num">VITE_API_URL</span></div></div>
+            <div class="deploy-box"><div class="t">deploy-pages.yml</div><div class="d"><span class="num">npm run build</span> con <span class="num">VITE_API_URL</span> · checkout con <span class="num">lfs: true</span></div></div>
             <div class="deploy-arrow-down">↓</div>
             <div class="deploy-box"><div class="t">GitHub Pages</div><div class="d">Frontend estático (React + Vite)</div></div>
           </div>
         </div>
         <p style="text-align:center; color: var(--ink-faint); font-size: 12px;">
-          Dos servicios gratuitos, sin tarjeta de crédito, desplegados de forma independiente y reproducible (RNF4).
+          Dos servicios gratuitos, sin tarjeta de crédito, desplegados de forma independiente y reproducible (RNF4).<br/>
+          Migrado de Hugging Face Spaces a Render tras un cupo de cómputo agotado (<span class="num">cpu-basic quota limit=0</span>) en dos cuentas distintas.
         </p>
       </div>
     </section>
@@ -880,8 +900,8 @@
           <li><strong>Agentic AI</strong> desacopla responsabilidades igual que un buen diseño de módulos: cada agente (riesgo, RAG, tono, planificación) se puede testear y reemplazar por separado.</li>
           <li><strong>RAG</strong> es lo que hace confiable a un chatbot en un dominio sensible — ancla las respuestas en la realidad institucional en vez de dejarlas "alucinar".</li>
           <li><strong>Los LLMs</strong> dan flexibilidad conversacional que ninguna regla fija lograría, pero exigen un plan de resiliencia: BETO tiene fallback a palabras clave si el modelo no carga.</li>
-          <li><strong>AI-assisted development</strong> aceleró el boilerplate hexagonal, pero no reemplazó la revisión humana — así se detectaron errores reales (una ruta mal calculada al modelo BETO, una pantalla de ánimo que nunca llamaba al backend).</li>
-          <li><strong>No todo módulo necesita las cuatro tendencias.</strong> El Dashboard de Bienestar demuestra que aplicar IA generativa "porque sí" habría sido sobre-ingeniería — la arquitectura hexagonal permitió que cada módulo eligiera solo lo que necesitaba.</li>
+          <li><strong>AI-assisted development</strong> aceleró el boilerplate hexagonal, pero no reemplazó la revisión humana — así se detectaron errores reales (una ruta mal calculada al modelo BETO, una pantalla de ánimo que nunca llamaba al backend, un caso de uso sin <span class="num">await</span>).</li>
+          <li><strong>RAG es la tendencia más cara en memoria, no en código.</strong> Integrarlo (ChromaDB + embeddings) fue directo, pero sostenerlo en un free tier de 512MB no lo fue: forzó a apagarlo en producción (<span class="num">ENABLE_RAG=false</span>) y migrar de Hugging Face Spaces a Render. La arquitectura hexagonal permitió ese trade-off sin tocar el resto del sistema — y que Módulo 2 y 3 adoptaran Agentic AI y LLMs (antes ausentes) sin arrastrar ese costo.</li>
         </ul>
       </div>
     </section>
