@@ -9,8 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Descargamos el modelo directamente en el contenedor durante la construcción
-RUN git lfs install && git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/BETO_model
+# Descargamos el modelo directamente en el contenedor durante la construcción.
+# El repo de modelo (kevinccana/FisiAgent-BETO) tiene los archivos anidados en
+# una subcarpeta BETO_model/ (se subió una carpeta local que ya se llamaba así,
+# en vez de subir su contenido a la raíz) -- de ahí el BETO_MODEL_PATH abajo.
+RUN git lfs install && git clone https://huggingface.co/kevinccana/FisiAgent-BETO /app/beto-repo
 
 COPY FISIAgent-Back/requirements.txt .
 
@@ -21,7 +24,7 @@ RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 
 # Copiamos solo el código fuente
 COPY FISIAgent-Back/app ./app
 
-ENV BETO_MODEL_PATH=/app/BETO_model \
+ENV BETO_MODEL_PATH=/app/beto-repo/BETO_model \
     PYTHONUNBUFFERED=1
 
 EXPOSE 7860
