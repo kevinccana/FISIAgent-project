@@ -23,6 +23,7 @@ class AgentRole(Enum):
     RESOURCE_FINDER = "resource_finder"  # Búsqueda de recursos externos
     EMPATHY_RESPONDER = "empathy_responder"  # Generación de respuestas empáticas
     PLANNER = "planner"              # Planificación inteligente de tareas (Funcionalidad 3)
+    MOOD_ANALYST = "mood_analyst"    # Análisis elaborado de bienestar emocional (Funcionalidad 2)
 
 
 @dataclass

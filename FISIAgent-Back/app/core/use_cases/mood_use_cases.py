@@ -7,6 +7,7 @@ from typing import List
 from app.core.domain.mood_models import (
     MoodEntry, MoodLevel, MoodStatistics, MonthlyMoodSummary, DailyMoodEntry
 )
+from app.core.domain.agent import AgentTask, AgentRole
 from app.ports.outbound.mood_repository import MoodLogRepositoryPort
 
 logger = logging.getLogger(__name__)
@@ -271,6 +272,50 @@ class GetMoodInsightsUseCase:
             recommendations.append("Sigue registrando tu ánimo para que podamos darte mejores recomendaciones.")
         
         return recommendations
+
+
+class GetMoodAIInsightsUseCase:
+    """
+    Caso de uso: Generar un análisis elaborado del estado de ánimo con IA.
+
+    A diferencia de GetMoodInsightsUseCase (reglas fijas, siempre disponible),
+    este delega en MoodInsightsAgent (Gemini) para un diagnóstico narrativo,
+    recomendaciones desarrolladas y recursos para investigar. Es opt-in -- se
+    dispara desde un botón aparte en el frontend, no en cada carga de página.
+    """
+
+    def __init__(self, mood_repository: MoodLogRepositoryPort, mood_insights_agent):
+        self.mood_repository = mood_repository
+        self.mood_insights_agent = mood_insights_agent
+
+    async def execute(self, user_id: str, days: int = 30) -> dict:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        statistics = self.mood_repository.get_statistics(user_id, start_date, end_date)
+        monthly_history = self.mood_repository.get_monthly_history(user_id, months=6)
+        entries = self.mood_repository.get_user_moods(user_id, start_date, end_date, limit=30)
+
+        agent_task = AgentTask(
+            agent_role=AgentRole.MOOD_ANALYST,
+            input_data={
+                "statistics": statistics,
+                "monthly_history": monthly_history,
+                "entries": entries,
+            }
+        )
+
+        result = await self.mood_insights_agent.execute(agent_task)
+
+        if result.success:
+            return result.data
+
+        logger.warning(f"MoodInsightsAgent falló para user={user_id}: {result.error_message}")
+        return {
+            "diagnosis": "No se pudo generar el análisis con IA en este momento. Intenta de nuevo más tarde.",
+            "recommendations": [],
+            "resources": [],
+        }
 
 
 class UpdateMoodUseCase:

@@ -34,6 +34,7 @@ from app.core.use_cases.mood_use_cases import (
     GetMoodHistoryUseCase,
     GetMonthlyCalendarUseCase,
     GetMoodInsightsUseCase,
+    GetMoodAIInsightsUseCase,
     UpdateMoodUseCase,
     DeleteMoodUseCase
 )
@@ -57,6 +58,7 @@ from app.core.agents import (
     EmpathyResponderAgent
 )
 from app.core.agents.planner_agent import PlannerAgent
+from app.core.agents.mood_insights_agent import MoodInsightsAgent
 from app.adapters.inbound.api import chat_router
 from app.adapters.inbound.api import mood_router
 from app.adapters.inbound.api import task_router
@@ -195,22 +197,27 @@ async def lifespan(app: FastAPI):
     # 6.1 Repositorio SQLite
     mood_repository = SQLiteMoodLogRepository(db_path="fisiagent.db")
     
-    # 6.2 Casos de uso
+    # 6.2 Agente de análisis elaborado (Gemini) -- opt-in, ver mood_insights_agent.py
+    mood_insights_agent = MoodInsightsAgent(llm_service=gemini_adapter)
+
+    # 6.3 Casos de uso
     register_mood_uc = RegisterMoodUseCase(mood_repository)
     get_history_uc = GetMoodHistoryUseCase(mood_repository)
     get_calendar_uc = GetMonthlyCalendarUseCase(mood_repository)
     get_insights_uc = GetMoodInsightsUseCase(mood_repository)
+    get_ai_insights_uc = GetMoodAIInsightsUseCase(mood_repository, mood_insights_agent)
     update_mood_uc = UpdateMoodUseCase(mood_repository)
     delete_mood_uc = DeleteMoodUseCase(mood_repository)
-    
-    # 6.3 Configurar router
+
+    # 6.4 Configurar router
     mood_router.configure_mood_router(
         register_mood=register_mood_uc,
         get_history=get_history_uc,
         get_calendar=get_calendar_uc,
         get_insights=get_insights_uc,
         update_mood=update_mood_uc,
-        delete_mood=delete_mood_uc
+        delete_mood=delete_mood_uc,
+        get_ai_insights=get_ai_insights_uc
     )
     logger.info("[Startup] ✓ Dashboard de Bienestar inicializado (SQLite)")
     

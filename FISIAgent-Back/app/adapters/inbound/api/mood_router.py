@@ -13,6 +13,7 @@ from app.core.use_cases.mood_use_cases import (
     GetMoodHistoryUseCase,
     GetMonthlyCalendarUseCase,
     GetMoodInsightsUseCase,
+    GetMoodAIInsightsUseCase,
     UpdateMoodUseCase,
     DeleteMoodUseCase
 )
@@ -108,6 +109,13 @@ class InsightsDTO(BaseModel):
     recommendations: List[str]
 
 
+class MoodAIInsightsDTO(BaseModel):
+    """DTO para el análisis elaborado con IA (Gemini)."""
+    diagnosis: str
+    recommendations: List[str]
+    resources: List[str] = []
+
+
 class UpdateMoodDTO(BaseModel):
     """DTO para actualizar un registro."""
     mood: int = Field(..., ge=0, le=3)
@@ -122,6 +130,7 @@ _register_mood_use_case: Optional[RegisterMoodUseCase] = None
 _get_mood_history_use_case: Optional[GetMoodHistoryUseCase] = None
 _get_monthly_calendar_use_case: Optional[GetMonthlyCalendarUseCase] = None
 _get_mood_insights_use_case: Optional[GetMoodInsightsUseCase] = None
+_get_mood_ai_insights_use_case: Optional[GetMoodAIInsightsUseCase] = None
 _update_mood_use_case: Optional[UpdateMoodUseCase] = None
 _delete_mood_use_case: Optional[DeleteMoodUseCase] = None
 
@@ -132,19 +141,21 @@ def configure_mood_router(
     get_calendar: GetMonthlyCalendarUseCase,
     get_insights: GetMoodInsightsUseCase,
     update_mood: UpdateMoodUseCase,
-    delete_mood: DeleteMoodUseCase
+    delete_mood: DeleteMoodUseCase,
+    get_ai_insights: Optional[GetMoodAIInsightsUseCase] = None
 ):
     """Configura el router con los casos de uso (DI desde main.py)."""
     global _register_mood_use_case, _get_mood_history_use_case
     global _get_monthly_calendar_use_case, _get_mood_insights_use_case
-    global _update_mood_use_case, _delete_mood_use_case
-    
+    global _update_mood_use_case, _delete_mood_use_case, _get_mood_ai_insights_use_case
+
     _register_mood_use_case = register_mood
     _get_mood_history_use_case = get_history
     _get_monthly_calendar_use_case = get_calendar
     _get_mood_insights_use_case = get_insights
     _update_mood_use_case = update_mood
     _delete_mood_use_case = delete_mood
+    _get_mood_ai_insights_use_case = get_ai_insights
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -277,6 +288,26 @@ async def get_mood_insights(user_id: str, days: int = 30):
         insights=insights_data["insights"],
         recommendations=insights_data["recommendations"]
     )
+
+
+@router.get("/insights/{user_id}/ai", response_model=MoodAIInsightsDTO)
+async def get_mood_ai_insights(user_id: str, days: int = 30):
+    """
+    Genera un análisis elaborado del estado de ánimo usando IA (Gemini).
+
+    A diferencia de `/insights/{user_id}` (reglas fijas, siempre disponible),
+    este endpoint es opt-in -- pensado para dispararse desde un botón aparte
+    en el frontend, no en cada carga de página, para no gastar cupo de Gemini
+    innecesariamente.
+    """
+    if not _get_mood_ai_insights_use_case:
+        raise HTTPException(status_code=500, detail="Servicio no inicializado")
+
+    try:
+        result = await _get_mood_ai_insights_use_case.execute(user_id, days)
+        return MoodAIInsightsDTO(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar análisis: {str(e)}")
 
 
 @router.put("/{entry_id}", status_code=status.HTTP_200_OK)

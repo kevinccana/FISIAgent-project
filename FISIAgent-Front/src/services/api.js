@@ -97,6 +97,13 @@ export const getMoodInsights = async (userId, days = 30) => {
   return response.data;
 };
 
+// Análisis elaborado con IA (Gemini) -- opt-in, se dispara desde un botón aparte
+// para no gastar cupo de Gemini en cada carga de la página.
+export const getMoodAIInsights = async (userId, days = 30) => {
+  const response = await api.get(`/mood/insights/${userId}/ai`, { params: { days } });
+  return response.data;
+};
+
 export const updateMood = async (entryId, mood, note = '') => {
   const response = await api.put(`/mood/${entryId}`, { mood, note });
   return response.data;

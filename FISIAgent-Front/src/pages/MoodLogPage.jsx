@@ -7,6 +7,7 @@ import {
   registerMood,
   getMoodHistory,
   getMoodInsights,
+  getMoodAIInsights,
   updateMood,
   deleteMood,
 } from "../services/api";
@@ -142,6 +143,9 @@ export default function MoodJournalPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [aiInsights, setAiInsights] = useState(null);
+  const [aiInsightsLoading, setAiInsightsLoading] = useState(false);
+
   const [selectedMood, setSelectedMood] = useState(null);
   const [note, setNote] = useState("");
   const [selectedDay, setSelectedDay] = useState(todayNum);
@@ -223,6 +227,18 @@ export default function MoodJournalPage() {
     } catch (e) {
       console.error("[MoodJournal] Error al eliminar:", e);
       setError("No se pudo eliminar el registro.");
+    }
+  };
+
+  const handleGetAIInsights = async () => {
+    setAiInsightsLoading(true);
+    try {
+      const data = await getMoodAIInsights(USER_ID, 30);
+      setAiInsights(data);
+    } catch (e) {
+      console.error("[MoodJournal] Error al generar análisis con IA:", e);
+    } finally {
+      setAiInsightsLoading(false);
     }
   };
 
@@ -319,6 +335,42 @@ export default function MoodJournalPage() {
               </ul>
             </div>
           )}
+
+          {/* Análisis profundo con IA (opt-in) */}
+          <div style={s.card}>
+            <p style={s.chartTitle}>Análisis profundo con IA</p>
+            <button style={s.smallBtn} onClick={handleGetAIInsights} disabled={aiInsightsLoading}>
+              {aiInsightsLoading ? "Analizando..." : "Generar análisis con IA"}
+            </button>
+            {aiInsights && (
+              <div style={s.aiResultBox}>
+                <p style={s.diagnosisText}>{aiInsights.diagnosis}</p>
+                <ul style={s.recList}>
+                  {aiInsights.recommendations.map((r, i) => (
+                    <li key={i} style={s.recItem}>{r}</li>
+                  ))}
+                </ul>
+                {aiInsights.resources && aiInsights.resources.length > 0 && (
+                  <>
+                    <p style={s.resourcesTitle}>Para investigar por tu cuenta:</p>
+                    <div style={s.resourceChips}>
+                      {aiInsights.resources.map((res, i) => (
+                        <a
+                          key={i}
+                          style={s.resourceChip}
+                          href={`https://www.google.com/search?q=${encodeURIComponent(res)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          🔎 {res}
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Right column: New Entry ─────────────────────────────── */}
@@ -543,6 +595,48 @@ const s = {
     fontSize: 12,
     color: "#c0c0c0",
     marginBottom: 6,
+  },
+  smallBtn: {
+    background: "#7A7F87",
+    border: "none",
+    borderRadius: 8,
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: 600,
+    padding: "6px 12px",
+    cursor: "pointer",
+  },
+  aiResultBox: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+  },
+  diagnosisText: {
+    fontSize: 13,
+    color: "#e0e0e0",
+    marginBottom: 8,
+  },
+  resourcesTitle: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#e0e0e0",
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  resourceChips: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  resourceChip: {
+    fontSize: 11.5,
+    color: "#B9BEC4",
+    background: "rgba(122,127,135,0.15)",
+    border: "1px solid rgba(122,127,135,0.35)",
+    borderRadius: 20,
+    padding: "5px 12px",
+    textDecoration: "none",
+    cursor: "pointer",
   },
 
   // New Entry panel
