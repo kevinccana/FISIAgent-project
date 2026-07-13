@@ -47,7 +47,21 @@ function CrisisOverlay({ onClose }) {
             Hola, soy JoinIA. A continuación te mostraré un video tranquilizador.
           </p>
 
-         
+          {/* Video local en bucle */}
+          <div className="video-container">
+            <video
+              ref={videoRef}
+              width="100%"
+              height="315"
+              controls  // Muestra los controles (play, pausa, volumen)
+              autoPlay={false}
+              loop={false}
+              onEnded={handleVideoEnd}
+              playsInline
+            >
+              <source src="/videos/Respiracion_Guiada.mp4" type="video/mp4" />
+            </video>
+          </div>
 
           {/* Información del video */}
           <div className="video-info">

@@ -21,3 +21,9 @@ JoinAI-Back
 .git
 .github
 *.ipynb
+.git
+.github
+*.mp4
+*.png
+*.bin
+*.sqlite3
