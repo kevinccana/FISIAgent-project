@@ -62,6 +62,17 @@ export const checkHealth = async () => {
   }
 };
 
+// Visualizador de estado del chatbot: ¿BETO cargó? ¿la API key de Gemini responde?
+export const getStatus = async () => {
+  try {
+    const response = await api.get('/status');
+    return response.data;
+  } catch (error) {
+    console.error('Status check failed:', error);
+    return { beto: 'unknown', rag: 'unknown', gemini: 'unknown', gemini_detail: null };
+  }
+};
+
 // ── Dashboard de Bienestar (Funcionalidad 2: Mood Logs) ─────────────────────
 
 export const registerMood = async (userId, mood, note = '') => {

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Message from '../components/Message';
 import CrisisOverlay from '../components/CrisisOverlay';
 import VideoPopup from '../components/VideoPopup';
-import { sendMessage } from '../services/api';
+import { sendMessage, getStatus } from '../services/api';
 import logoFisi from '../assets/Logo-fisi.png';
 
 function ChatPage() {
@@ -21,6 +21,7 @@ function ChatPage() {
   const [nivelRiesgo, setNivelRiesgo] = useState(null);
   const [showVideoPopup, setShowVideoPopup] = useState(false);
   const [videoSugerido, setVideoSugerido] = useState(null);
+  const [systemStatus, setSystemStatus] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -32,6 +33,11 @@ function ChatPage() {
   // Auto-focus al input
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Visualizador: ¿BETO cargó? ¿la API key de Gemini responde?
+  useEffect(() => {
+    getStatus().then(setSystemStatus);
   }, []);
 
   const handleSendMessage = async () => {
@@ -140,6 +146,16 @@ function ChatPage() {
             <span className="session-info">sesión #001 - iniciada {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
           <div className="chat-header-right">
+            {systemStatus && (
+              <div className="system-status" title={systemStatus.gemini_detail || ''}>
+                <span className={`status-pill status-pill--${systemStatus.beto === 'active' ? 'ok' : 'warn'}`}>
+                  <span className="status-dot" /> BETO {systemStatus.beto === 'active' ? 'activo' : 'fallback'}
+                </span>
+                <span className={`status-pill status-pill--${systemStatus.gemini === 'ok' ? 'ok' : 'error'}`}>
+                  <span className="status-dot" /> Gemini {systemStatus.gemini === 'ok' ? 'conectado' : 'sin conexión'}
+                </span>
+              </div>
+            )}
             {nivelRiesgo && (
               <div className={`risk-indicator risk-indicator--${nivelRiesgo}`}>
                 <span className="risk-dot" />

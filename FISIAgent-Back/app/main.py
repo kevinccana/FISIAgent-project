@@ -16,7 +16,7 @@ Startup:
 import logging
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -97,11 +97,17 @@ async def lifespan(app: FastAPI):
     
     # 1.2 Gemini Adapter (LLM)
     gemini_adapter = GeminiAdapter(api_key=api_key or "")
-    
+
+    # Se guardan en app.state para que el endpoint GET /status (visualizador del
+    # chatbot: ¿BETO cargó?, ¿la API key de Gemini responde?) los pueda leer.
+    app.state.beto_adapter = beto_adapter
+    app.state.gemini_adapter = gemini_adapter
+
     # 1.3 RAG Adapter (Early Adopters - InfoQ 2025)
     # ENABLE_RAG=false en entornos con RAM limitada (ej. Render free tier, 512MB no
     # alcanza para BETO + el modelo de embeddings de RAG a la vez). Por defecto activo.
     rag_enabled = os.getenv("ENABLE_RAG", "true").strip().lower() != "false"
+    app.state.rag_enabled = rag_enabled
     logger.info(f"[Startup] Inicializando RAG con ChromaDB... (enabled={rag_enabled})")
     rag_adapter = RAGAdapter(
         docs_path="app/docs/fisi",
@@ -314,4 +320,24 @@ def root():
             "late_majority": "LLMs (Gemini 2.5 Flash)"
         },
         "status": "running"
+    }
+
+
+@app.get("/status")
+def status(request: Request):
+    """
+    Visualizador de estado para el chatbot: confirma si BETO cargó (o si está
+    en modo fallback por palabras clave) y si la API key de Gemini responde de
+    verdad (no solo si la variable de entorno existe -- una key inválida o sin
+    cupo también se refleja acá).
+    """
+    beto_adapter = request.app.state.beto_adapter
+    gemini_adapter = request.app.state.gemini_adapter
+    gemini_status = gemini_adapter.check_connection()
+
+    return {
+        "beto": "active" if beto_adapter.is_available() else "fallback",
+        "rag": "active" if request.app.state.rag_enabled else "disabled",
+        "gemini": "ok" if gemini_status["ok"] else "error",
+        "gemini_detail": gemini_status["detail"],
     }

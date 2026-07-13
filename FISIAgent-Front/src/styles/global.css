@@ -148,6 +148,49 @@ body {
   gap: 10px;
 }
 
+/* Visualizador de estado del chatbot (BETO / Gemini) */
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-pill--ok {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+}
+.status-pill--ok .status-dot { background: #4caf50; }
+
+.status-pill--warn {
+  background: rgba(255, 167, 38, 0.15);
+  color: #ffb74d;
+}
+.status-pill--warn .status-dot { background: #ffa726; }
+
+.status-pill--error {
+  background: rgba(255, 68, 68, 0.15);
+  color: #ef5350;
+}
+.status-pill--error .status-dot { background: #ff4444; }
+
 /* Indicador de nivel de riesgo BETO */
 .risk-indicator {
   display: flex;
