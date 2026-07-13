@@ -307,6 +307,14 @@ Si cambias `VITE_API_URL` o `HF_SPACE` en GitHub (Settings → Secrets and varia
 - Solución: agrega la variable **`FRONTEND_URL`** como *Variable* (no Secret) en el Space de Hugging Face — recuerda que este es un env var que lee `main.py`, así que también puede vivir en el propio Space, igual que `GEMINI_API_KEY` (paso 5).
 - Ejemplo de valor: `https://tu-usuario.github.io`
 
+### El Space responde `503 The space is paused, ask a maintainer to restart it`
+- Estado normal la primera vez que se crea el Space, o si alguien lo pausó manualmente. No se reactiva solo con tráfico (a diferencia del "sleep" por inactividad).
+- Fix: entra al Space → **"Restart this Space"**.
+
+### Al reiniciar el Space: `403 You've reached your cpu-basic quota limit`
+- Las cuentas gratuitas de Hugging Face permiten solo **un** Space `cpu-basic` corriendo a la vez. Si iteraste varias veces creando/desplegando Spaces, es fácil terminar con varios "Running" al mismo tiempo sin darte cuenta.
+- Fix: ve a tu perfil de Hugging Face → pestaña **Spaces**, identifica cuáles están "Running" y pausa (o borra, si son de pruebas viejas) todos menos el que necesitas activo. Luego reinicia el que sí quieres.
+
 ### El frontend carga en blanco (pantalla vacía) en GitHub Pages
 - Casi siempre es el `base` de `vite.config.js` mal configurado o el nombre del repo cambió.
 - Verifica en `vite.config.js` que `base` coincida exactamente con `/NOMBRE-DEL-REPO/` (con las barras) tal como aparece en la URL de GitHub Pages.
